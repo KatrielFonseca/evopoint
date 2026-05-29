@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+sqlalchemy
+pymysql
+alembic
+python-jose
+passlib
+opencv-python
+insightface
+onnxruntime
+numpy
+pillow
+redis
