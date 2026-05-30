@@ -83,6 +83,11 @@ def start_realtime_capture():
                         log.get("event", "")
                     ).strip()
 
+                    print("================================")
+                    print("EVENTO RECEBIDO:")
+                    print(log)
+                    print("================================")
+
                     log_time_raw = str(
                         log.get("time", "")
                     ).strip()

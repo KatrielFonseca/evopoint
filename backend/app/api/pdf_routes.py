@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 
 from collections import defaultdict
 from datetime import datetime
+from app.models.scale import Scale
 
 from reportlab.platypus import (
     SimpleDocTemplate,
@@ -107,6 +108,10 @@ def generate_pdf(registration: str):
                 "success": False,
                 "message": "Funcionário não encontrado"
             }
+
+        scale = db.query(Scale).filter(
+            Scale.name == employee.schedule
+        ).first()
 
         # =================================================
         # REGISTROS
@@ -235,49 +240,79 @@ def generate_pdf(registration: str):
         # INFO FUNCIONÁRIO
         # =================================================
 
+        if scale:
+
+            seg = (
+                f"{scale.entry_1} {scale.exit_1} "
+                f"{scale.entry_2} {scale.exit_2}"
+                if scale.monday
+                else "Folga"
+            )
+
+            ter = (
+                f"{scale.entry_1} {scale.exit_1} "
+                f"{scale.entry_2} {scale.exit_2}"
+                if scale.tuesday
+                else "Folga"
+            )
+
+            qua = (
+                f"{scale.entry_1} {scale.exit_1} "
+                f"{scale.entry_2} {scale.exit_2}"
+                if scale.wednesday
+                else "Folga"
+            )
+
+            qui = (
+                f"{scale.entry_1} {scale.exit_1} "
+                f"{scale.entry_2} {scale.exit_2}"
+                if scale.thursday
+                else "Folga"
+            )
+
+            sex = (
+                f"{scale.entry_1} {scale.exit_1} "
+                f"{scale.entry_2} {scale.exit_2}"
+                if scale.friday
+                else "Folga"
+            )
+
+            sab = (
+                f"{scale.entry_1} {scale.exit_1} "
+                f"{scale.entry_2} {scale.exit_2}"
+                if scale.saturday
+                else "Folga"
+            )
+
+            dom = (
+                f"{scale.entry_1} {scale.exit_1} "
+                f"{scale.entry_2} {scale.exit_2}"
+                if scale.sunday
+                else "Folga"
+            )
+
+        else:
+
+            seg = ter = qua = qui = sex = sab = dom = "-"
+
         info_data = [
 
-            [
-                "Empresa",
-                employee.company,
-                "Horário"
-            ],
+            ["Empresa", employee.company, "Horário"],
 
-            [
-                "CNPJ",
-                "01.919.625/0001-14",
-                employee.schedule
-            ],
+            ["CNPJ", "01.919.625/0001-14", f"SEG {seg}"],
 
-            [
-                "Matrícula",
-                employee.registration,
-                ""
-            ],
+            ["Matrícula", employee.registration, f"TER {ter}"],
 
-            [
-                "Funcionário",
-                employee.name,
-                ""
-            ],
+            ["Funcionário", employee.name, f"QUA {qua}"],
 
-            [
-                "CPF",
-                employee.cpf,
-                ""
-            ],
+            ["CPF", employee.cpf, f"QUI {qui}"],
 
-            [
-                "Cargo",
-                employee.role,
-                ""
-            ],
+            ["Cargo", employee.role, f"SEX {sex}"],
 
-            [
-                "Departamento",
-                employee.department,
-                ""
-            ]
+            ["Departamento", employee.department, f"SAB {sab}"],
+
+            ["", "", f"DOM {dom}"]
+
         ]
 
         info_table = Table(

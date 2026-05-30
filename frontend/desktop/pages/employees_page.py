@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 API_URL = "http://127.0.0.1:8000/employees"
+SCALES_URL = "http://127.0.0.1:8000/scales"
 
 
 class EmployeesPage(QWidget):
@@ -39,6 +40,8 @@ class EmployeesPage(QWidget):
         self.editing_employee_id = None
 
         self.setup_ui()
+
+        self.load_scales()
 
         self.load_employees()
 
@@ -236,6 +239,10 @@ class EmployeesPage(QWidget):
         # COMBOS
         # =====================================================
 
+        # =====================================================
+        # COMBOS
+        # =====================================================
+
         self.company_input = self.create_combo([
 
             "PAO DE FORNO COMERCIO DE PAES LTDA",
@@ -243,29 +250,15 @@ class EmployeesPage(QWidget):
 
         ])
 
-        self.department_input = self.create_combo([
+        self.department_input = self.create_input(
+            "Departamento"
+        )
 
-            "Administração",
-            "Financeiro",
-            "RH",
-            "Operacional"
+        self.role_input = self.create_input(
+            "Cargo"
+        )
 
-        ])
-
-        self.role_input = self.create_combo([
-
-            "Auxiliar Administrativo",
-            "Supervisor",
-            "Gerente"
-
-        ])
-
-        self.schedule_input = self.create_combo([
-
-            "07:00 11:00 13:00 16:00",
-            "08:00 12:00 13:00 17:00"
-
-        ])
+        self.schedule_input = self.create_combo([])
 
         # =====================================================
         # GRID
@@ -652,6 +645,34 @@ class EmployeesPage(QWidget):
     # LOAD EMPLOYEES
     # =====================================================
 
+
+
+    def load_scales(self):
+
+        try:
+
+            self.schedule_input.clear()
+
+            response = requests.get(
+                SCALES_URL
+            )
+
+            scales = response.json()
+
+            for scale in scales:
+
+                self.schedule_input.addItem(
+                    scale["name"]
+                )
+
+        except Exception as e:
+
+            print(
+                "ERRO LOAD SCALES:",
+                str(e)
+            )
+
+
     def load_employees(self):
 
         try:
@@ -871,10 +892,10 @@ class EmployeesPage(QWidget):
                 self.company_input.currentText(),
 
                 "department":
-                self.department_input.currentText(),
+                self.department_input.text().strip(),
 
                 "role":
-                self.role_input.currentText(),
+                self.role_input.text().strip(),
 
                 "schedule":
                 self.schedule_input.currentText()
@@ -956,9 +977,9 @@ class EmployeesPage(QWidget):
 
         self.company_input.setCurrentIndex(0)
 
-        self.department_input.setCurrentIndex(0)
+        self.department_input.clear()
 
-        self.role_input.setCurrentIndex(0)
+        self.role_input.clear()
 
         self.schedule_input.setCurrentIndex(0)
 
@@ -1044,11 +1065,11 @@ class EmployeesPage(QWidget):
             employee.get("company", "")
         )
 
-        self.department_input.setCurrentText(
+        self.department_input.setText(
             employee.get("department", "")
         )
 
-        self.role_input.setCurrentText(
+        self.role_input.setText(
             employee.get("role", "")
         )
 

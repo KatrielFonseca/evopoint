@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
 
 from pages.employees_page import EmployeesPage
 from pages.records_page import RecordsPage
+from pages.scales_page import ScalesPage
+from pages.bank_hours_page import BankHoursPage
 
 
 # =========================================
@@ -569,13 +571,9 @@ escalas, registros em tempo real e integração EVO.
         # PLACEHOLDERS
         # =====================================
 
-        scales_page = self.create_placeholder(
-            "Escalas"
-        )
+        self.scales_page = ScalesPage()
 
-        hours_page = self.create_placeholder(
-            "Banco de Horas"
-        )
+        self.bank_hours_page = BankHoursPage()
 
         reports_page = self.create_placeholder(
             "Relatórios"
@@ -606,11 +604,11 @@ escalas, registros em tempo real e integração EVO.
         )
 
         self.stack.addWidget(
-            scales_page
+            self.scales_page
         )
 
         self.stack.addWidget(
-            hours_page
+            self.bank_hours_page
         )
 
         self.stack.addWidget(

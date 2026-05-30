@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from app.database.database import engine
 from app.database.database import Base
+from app.models.scale import Scale
 
 # =========================================
 # MODELS
@@ -17,6 +18,7 @@ from app.database.database import Base
 
 from app.models.employee import Employee
 from app.models.time_record import TimeRecord
+
 
 # =========================================
 # ROUTES
@@ -30,6 +32,10 @@ from app.api.test_evo import router as test_evo_router
 from app.api.time_record_routes import router as time_record_router
 from app.api.timesheet_routes import router as timesheet_router
 from app.api.pdf_routes import router as pdf_router
+from app.api.scale_routes import router as scale_router
+from app.api.bank_hours_routes import (
+    router as bank_hours_router
+)
 
 # =========================================
 # REALTIME SERVICE
@@ -109,6 +115,12 @@ app.include_router(time_record_router)
 app.include_router(timesheet_router)
 
 app.include_router(pdf_router)
+
+app.include_router(scale_router)
+
+app.include_router(
+    bank_hours_router
+)
 
 # =========================================
 # DEBUG
