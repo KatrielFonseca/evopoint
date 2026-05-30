@@ -36,6 +36,9 @@ from app.api.scale_routes import router as scale_router
 from app.api.bank_hours_routes import (
     router as bank_hours_router
 )
+from app.api.report_routes import (
+    router as report_router
+)
 
 # =========================================
 # REALTIME SERVICE
@@ -121,7 +124,9 @@ app.include_router(scale_router)
 app.include_router(
     bank_hours_router
 )
-
+app.include_router(
+    report_router
+)
 # =========================================
 # DEBUG
 # =========================================

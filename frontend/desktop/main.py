@@ -19,6 +19,7 @@ from pages.employees_page import EmployeesPage
 from pages.records_page import RecordsPage
 from pages.scales_page import ScalesPage
 from pages.bank_hours_page import BankHoursPage
+from pages.reports_page import ReportsPage
 
 
 # =========================================
@@ -263,7 +264,7 @@ class MainWindow(QMainWindow):
         self.settings_button = SidebarButton(
             "Configurações"
         )
-
+        
         buttons = [
 
             self.dashboard_button,
@@ -575,9 +576,7 @@ escalas, registros em tempo real e integração EVO.
 
         self.bank_hours_page = BankHoursPage()
 
-        reports_page = self.create_placeholder(
-            "Relatórios"
-        )
+        self.reports_page = ReportsPage()
 
         devices_page = self.create_placeholder(
             "Dispositivos"
@@ -612,7 +611,7 @@ escalas, registros em tempo real e integração EVO.
         )
 
         self.stack.addWidget(
-            reports_page
+            self.reports_page
         )
 
         self.stack.addWidget(
