@@ -121,10 +121,8 @@ def start_realtime_capture():
                     # IGNORA LOGS ANTIGOS
                     # =================================
 
-                    if log_time < service_started_at:
-
+                    if log_time.year < 2025:
                         continue
-
                     # =================================
                     # CHAVE ÚNICA DO LOG
                     # =================================

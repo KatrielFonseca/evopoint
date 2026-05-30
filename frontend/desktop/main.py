@@ -20,7 +20,7 @@ from pages.records_page import RecordsPage
 from pages.scales_page import ScalesPage
 from pages.bank_hours_page import BankHoursPage
 from pages.reports_page import ReportsPage
-
+from pages.devices_page import DevicesPage
 
 # =========================================
 # SIDEBAR BUTTON
@@ -578,9 +578,7 @@ escalas, registros em tempo real e integração EVO.
 
         self.reports_page = ReportsPage()
 
-        devices_page = self.create_placeholder(
-            "Dispositivos"
-        )
+        self.devices_page = DevicesPage()
 
         settings_page = self.create_placeholder(
             "Configurações"
@@ -615,7 +613,7 @@ escalas, registros em tempo real e integração EVO.
         )
 
         self.stack.addWidget(
-            devices_page
+            self.devices_page
         )
 
         self.stack.addWidget(
