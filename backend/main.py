@@ -40,6 +40,19 @@ from app.api.report_routes import (
     router as report_router
 )
 
+from app.models.settings import Settings
+from app.models.holiday import Holiday
+
+from app.api.settings_routes import (
+    router as settings_router
+)
+from app.api.holiday_routes import (
+    router as holiday_router
+)
+
+from app.api.justification_routes import (
+    router as justification_router
+)
 # =========================================
 # REALTIME SERVICE
 # =========================================
@@ -126,6 +139,18 @@ app.include_router(
 )
 app.include_router(
     report_router
+)
+
+app.include_router(
+    settings_router
+)
+
+app.include_router(
+    holiday_router
+)
+
+app.include_router(
+    justification_router
 )
 # =========================================
 # DEBUG

@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 
 API_URL = "http://127.0.0.1:8000/employees"
 SCALES_URL = "http://127.0.0.1:8000/scales"
+SETTINGS_URL = "http://127.0.0.1:8000/settings/"
 
 
 class EmployeesPage(QWidget):
@@ -40,6 +41,8 @@ class EmployeesPage(QWidget):
         self.editing_employee_id = None
 
         self.setup_ui()
+
+        self.load_company()
 
         self.load_scales()
 
@@ -235,20 +238,16 @@ class EmployeesPage(QWidget):
             "RG"
         )
 
-        # =====================================================
-        # COMBOS
-        # =====================================================
 
         # =====================================================
         # COMBOS
         # =====================================================
 
-        self.company_input = self.create_combo([
+        self.company_input = self.create_input(
+            "Empresa"
+        )
 
-            "PAO DE FORNO COMERCIO DE PAES LTDA",
-            "EVOTECH SISTEMAS"
-
-        ])
+        self.company_input.setReadOnly(True)
 
         self.department_input = self.create_input(
             "Departamento"
@@ -645,7 +644,33 @@ class EmployeesPage(QWidget):
     # LOAD EMPLOYEES
     # =====================================================
 
+    def load_company(self):
 
+        try:
+
+            self.company_input.clear()
+
+            response = requests.get(
+                SETTINGS_URL
+            )
+
+            data = response.json()
+
+            company_name = data.get(
+                "company_name",
+                ""
+            )
+
+            self.company_input.setText(
+                company_name
+            )
+
+        except Exception as e:
+
+            print(
+                "ERRO LOAD COMPANY:",
+                str(e)
+            )
 
     def load_scales(self):
 
@@ -889,7 +914,7 @@ class EmployeesPage(QWidget):
                 self.rg_input.text().strip(),
 
                 "company":
-                self.company_input.currentText(),
+                self.company_input.text(),
 
                 "department":
                 self.department_input.text().strip(),
@@ -975,7 +1000,7 @@ class EmployeesPage(QWidget):
 
         self.rg_input.clear()
 
-        self.company_input.setCurrentIndex(0)
+        self.load_company()
 
         self.department_input.clear()
 
@@ -1061,7 +1086,7 @@ class EmployeesPage(QWidget):
             employee.get("rg", "")
         )
 
-        self.company_input.setCurrentText(
+        self.company_input.setText(
             employee.get("company", "")
         )
 

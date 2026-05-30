@@ -21,6 +21,8 @@ from pages.scales_page import ScalesPage
 from pages.bank_hours_page import BankHoursPage
 from pages.reports_page import ReportsPage
 from pages.devices_page import DevicesPage
+from pages.settings_page import SettingsPage
+from pages.justifications_page import JustificationsPage
 
 # =========================================
 # SIDEBAR BUTTON
@@ -264,7 +266,10 @@ class MainWindow(QMainWindow):
         self.settings_button = SidebarButton(
             "Configurações"
         )
-        
+        self.justifications_button = SidebarButton(
+            "Justificativas"
+        )
+
         buttons = [
 
             self.dashboard_button,
@@ -274,6 +279,8 @@ class MainWindow(QMainWindow):
             self.records_button,
 
             self.scales_button,
+
+            self.justifications_button,
 
             self.hours_button,
 
@@ -580,9 +587,9 @@ escalas, registros em tempo real e integração EVO.
 
         self.devices_page = DevicesPage()
 
-        settings_page = self.create_placeholder(
-            "Configurações"
-        )
+        self.settings_page = SettingsPage()
+
+        self.justifications_page = JustificationsPage()
 
         # =====================================
         # ADD STACK
@@ -617,11 +624,15 @@ escalas, registros em tempo real e integração EVO.
         )
 
         self.stack.addWidget(
-            settings_page
+            self.settings_page
         )
 
         content_layout.addWidget(
             self.stack
+        )
+
+        self.stack.addWidget(
+            self.justifications_page
         )
 
         # =====================================
@@ -658,6 +669,10 @@ escalas, registros em tempo real e integração EVO.
 
         self.settings_button.clicked.connect(
             lambda: self.stack.setCurrentIndex(7)
+        )
+
+        self.justifications_button.clicked.connect(
+            lambda: self.stack.setCurrentIndex(8)
         )
 
         # =====================================
