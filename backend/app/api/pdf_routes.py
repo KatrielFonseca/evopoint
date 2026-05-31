@@ -3,7 +3,6 @@ from fastapi.responses import FileResponse
 
 from collections import defaultdict
 from datetime import datetime
-from app.models.scale import Scale
 
 from reportlab.platypus import (
     SimpleDocTemplate,
@@ -14,8 +13,10 @@ from reportlab.platypus import (
 )
 
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.styles import (
+    getSampleStyleSheet,
+    ParagraphStyle
+)
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 
@@ -23,6 +24,8 @@ from app.database.database import SessionLocal
 
 from app.models.employee import Employee
 from app.models.time_record import TimeRecord
+from app.models.scale import Scale
+from app.models.holiday import Holiday
 
 router = APIRouter()
 
@@ -33,6 +36,8 @@ router = APIRouter()
 
 def seconds_to_hours(seconds):
 
+    seconds = int(seconds)
+
     hours = seconds // 3600
 
     minutes = (seconds % 3600) // 60
@@ -40,55 +45,78 @@ def seconds_to_hours(seconds):
     return f"{hours:02}:{minutes:02}"
 
 
-def parse_schedule(schedule):
+def parse_schedule(scale):
+
+    if not scale:
+
+        return 8 * 3600
 
     try:
 
-        horarios = schedule.split()
+        entrada_1 = datetime.strptime(
+            scale.entry_1,
+            "%H:%M"
+        )
 
-        if len(horarios) >= 4:
+        saida_1 = datetime.strptime(
+            scale.exit_1,
+            "%H:%M"
+        )
 
-            entrada_1 = datetime.strptime(
-                horarios[0],
-                "%H:%M"
-            )
+        entrada_2 = datetime.strptime(
+            scale.entry_2,
+            "%H:%M"
+        )
 
-            saida_1 = datetime.strptime(
-                horarios[1],
-                "%H:%M"
-            )
+        saida_2 = datetime.strptime(
+            scale.exit_2,
+            "%H:%M"
+        )
 
-            entrada_2 = datetime.strptime(
-                horarios[2],
-                "%H:%M"
-            )
+        return (
 
-            saida_2 = datetime.strptime(
-                horarios[3],
-                "%H:%M"
-            )
+            (saida_1 - entrada_1).seconds
 
-            carga = (
-                (saida_1 - entrada_1).seconds
-                +
-                (saida_2 - entrada_2).seconds
-            )
+            +
 
-            return carga
+            (saida_2 - entrada_2).seconds
+
+        )
 
     except:
 
-        pass
+        return 8 * 3600
 
-    return 8 * 3600
+
+def get_weekday_name(dt):
+
+    dias = [
+
+        "SEG",
+        "TER",
+        "QUA",
+        "QUI",
+        "SEX",
+        "SAB",
+        "DOM"
+
+    ]
+
+    return dias[
+        dt.weekday()
+    ]
 
 
 # =========================================================
 # PDF
 # =========================================================
 
-@router.get("/timesheet/pdf/{registration}")
-def generate_pdf(registration: str):
+@router.get(
+    "/timesheet/pdf/{registration}"
+)
+def generate_pdf(
+    registration: str
+):
 
     db = SessionLocal()
 
@@ -98,46 +126,92 @@ def generate_pdf(registration: str):
         # FUNCIONÁRIO
         # =================================================
 
-        employee = db.query(Employee).filter(
-            Employee.registration == registration
+        employee = db.query(
+            Employee
+        ).filter(
+
+            Employee.registration
+            ==
+            registration
+
         ).first()
 
         if not employee:
 
             return {
+
                 "success": False,
-                "message": "Funcionário não encontrado"
+
+                "message":
+                    "Funcionário não encontrado"
+
             }
 
-        scale = db.query(Scale).filter(
-            Scale.name == employee.schedule
+        scale = db.query(
+            Scale
+        ).filter(
+
+            Scale.name
+            ==
+            employee.schedule
+
         ).first()
 
         # =================================================
         # REGISTROS
         # =================================================
 
-        records = db.query(TimeRecord).filter(
-            TimeRecord.employee_registration == registration
+        records = db.query(
+            TimeRecord
+        ).filter(
+
+            TimeRecord.employee_registration
+            ==
+            registration
+
         ).order_by(
+
             TimeRecord.record_time.asc()
+
         ).all()
 
-        grouped = defaultdict(list)
+        grouped = defaultdict(
+            list
+        )
 
         for record in records:
 
-            key = str(
+            date_key = str(
                 record.record_time.date()
             )
 
-            grouped[key].append(record)
+            grouped[
+                date_key
+            ].append(
+                record
+            )
 
         # =================================================
-        # PDF CONFIG
+        # FERIADOS
         # =================================================
 
-        pdf_path = f"timesheet_{registration}.pdf"
+        holidays = {
+
+            str(item.date)
+
+            for item in db.query(
+                Holiday
+            ).all()
+
+        }
+
+        # =================================================
+        # PDF
+        # =================================================
+
+        pdf_path = (
+            f"timesheet_{registration}.pdf"
+        )
 
         doc = SimpleDocTemplate(
 
@@ -150,9 +224,12 @@ def generate_pdf(registration: str):
 
             topMargin=14,
             bottomMargin=14
+
         )
 
-        styles = getSampleStyleSheet()
+        styles = (
+            getSampleStyleSheet()
+        )
 
         title_style = ParagraphStyle(
 
@@ -168,7 +245,9 @@ def generate_pdf(registration: str):
 
             leading=17,
 
-            textColor=colors.HexColor("#00c853")
+            textColor=colors.HexColor(
+                "#00c853"
+            )
         )
 
         subtitle_style = ParagraphStyle(
@@ -207,33 +286,53 @@ def generate_pdf(registration: str):
         # HEADER
         # =================================================
 
-        title = Paragraph(
-            "EVOPoint",
-            title_style
+        elements.append(
+
+            Paragraph(
+
+                "EVOPoint",
+
+                title_style
+
+            )
+
         )
-
-        subtitle = Paragraph(
-            "Sistema inteligente de ponto facial",
-            subtitle_style
-        )
-
-        emitido = Paragraph(
-
-            f"""
-            CARTÃO PONTO<br/>
-            Emitido em:
-            {datetime.now().strftime("%d/%m/%Y %H:%M")}
-            """,
-
-            tiny_style
-        )
-
-        elements.append(title)
-        elements.append(subtitle)
-        elements.append(emitido)
 
         elements.append(
-            Spacer(1, 6)
+
+            Paragraph(
+
+                "Sistema inteligente de ponto facial",
+
+                subtitle_style
+
+            )
+
+        )
+
+        elements.append(
+
+            Paragraph(
+
+                f"""
+                CARTÃO PONTO<br/>
+                Emitido em:
+                {datetime.now().strftime("%d/%m/%Y %H:%M")}
+                """,
+
+                tiny_style
+
+            )
+
+        )
+
+        elements.append(
+
+            Spacer(
+                1,
+                6
+            )
+
         )
 
         # =================================================
@@ -245,50 +344,43 @@ def generate_pdf(registration: str):
             seg = (
                 f"{scale.entry_1} {scale.exit_1} "
                 f"{scale.entry_2} {scale.exit_2}"
-                if scale.monday
-                else "Folga"
+                if scale.monday else "Folga"
             )
 
             ter = (
                 f"{scale.entry_1} {scale.exit_1} "
                 f"{scale.entry_2} {scale.exit_2}"
-                if scale.tuesday
-                else "Folga"
+                if scale.tuesday else "Folga"
             )
 
             qua = (
                 f"{scale.entry_1} {scale.exit_1} "
                 f"{scale.entry_2} {scale.exit_2}"
-                if scale.wednesday
-                else "Folga"
+                if scale.wednesday else "Folga"
             )
 
             qui = (
                 f"{scale.entry_1} {scale.exit_1} "
                 f"{scale.entry_2} {scale.exit_2}"
-                if scale.thursday
-                else "Folga"
+                if scale.thursday else "Folga"
             )
 
             sex = (
                 f"{scale.entry_1} {scale.exit_1} "
                 f"{scale.entry_2} {scale.exit_2}"
-                if scale.friday
-                else "Folga"
+                if scale.friday else "Folga"
             )
 
             sab = (
                 f"{scale.entry_1} {scale.exit_1} "
                 f"{scale.entry_2} {scale.exit_2}"
-                if scale.saturday
-                else "Folga"
+                if scale.saturday else "Folga"
             )
 
             dom = (
                 f"{scale.entry_1} {scale.exit_1} "
                 f"{scale.entry_2} {scale.exit_2}"
-                if scale.sunday
-                else "Folga"
+                if scale.sunday else "Folga"
             )
 
         else:
@@ -324,6 +416,7 @@ def generate_pdf(registration: str):
                 255,
                 140
             ]
+
         )
 
         info_table.setStyle(TableStyle([
@@ -347,9 +440,12 @@ def generate_pdf(registration: str):
             ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#00c853")),
 
             ("TEXTCOLOR", (0, 0), (0, -1), colors.white)
+
         ]))
 
-        elements.append(info_table)
+        elements.append(
+            info_table
+        )
 
         elements.append(
             Spacer(1, 8)
@@ -379,6 +475,7 @@ def generate_pdf(registration: str):
             "EX0%",
             "EX100%",
             "BSALDO"
+
         ]]
 
         total_normais = 0
@@ -387,62 +484,98 @@ def generate_pdf(registration: str):
         total_carga = 0
 
         carga_diaria = parse_schedule(
-            employee.schedule
+            scale
         )
 
         # =================================================
-        # PROCESSA
+        # PROCESSAMENTO
         # =================================================
 
         for date, day_records in grouped.items():
+
+            current_date = datetime.strptime(
+                date,
+                "%Y-%m-%d"
+            )
+
+            weekday = current_date.weekday()
+
+            is_saturday = (
+                weekday == 5
+            )
+
+            is_sunday = (
+                weekday == 6
+            )
+
+            is_holiday = (
+                date in holidays
+            )
 
             ordered = sorted(
 
                 day_records,
 
-                key=lambda x: x.record_time
+                key=lambda x:
+                    x.record_time
+
             )
 
             batidas = []
 
-            for r in ordered:
+            for item in ordered:
 
                 batidas.append({
 
                     "time":
-                        r.record_time.strftime(
+
+                        item.record_time.strftime(
                             "%H:%M"
                         ),
 
                     "datetime":
-                        r.record_time
+                        item.record_time
+
                 })
 
             while len(batidas) < 6:
 
-                batidas.append(None)
+                batidas.append(
+                    None
+                )
 
             worked_seconds = 0
 
             pares = [
 
                 (0, 1),
+
                 (2, 3),
+
                 (4, 5)
+
             ]
 
             for entrada_i, saida_i in pares:
 
-                entrada = batidas[entrada_i]
-                saida = batidas[saida_i]
+                entrada = batidas[
+                    entrada_i
+                ]
+
+                saida = batidas[
+                    saida_i
+                ]
 
                 if entrada and saida:
 
                     diff = (
 
                         saida["datetime"]
+
                         -
+
                         entrada["datetime"]
+
                     )
 
                     sec = int(
@@ -456,26 +589,80 @@ def generate_pdf(registration: str):
             faltas = 0
             extras = 0
 
-            if worked_seconds < carga_diaria:
+            # ==========================================
+            # FERIADO = 100%
+            # ==========================================
 
-                faltas = (
-                    carga_diaria
-                    -
-                    worked_seconds
-                )
+            if is_holiday:
 
-            elif worked_seconds > carga_diaria:
+                extras = worked_seconds
 
-                extras = (
-                    worked_seconds
-                    -
-                    carga_diaria
-                )
+            # ==========================================
+            # DOMINGO FOLGA = 100%
+            # ==========================================
+
+            elif is_sunday and (
+
+                not scale
+
+                or
+
+                not scale.sunday
+
+            ):
+
+                extras = worked_seconds
+
+            # ==========================================
+            # SÁBADO FOLGA = 100%
+            # ==========================================
+
+            elif is_saturday and (
+
+                not scale
+
+                or
+
+                not scale.saturday
+
+            ):
+
+                extras = worked_seconds
+
+            else:
+
+                if worked_seconds < carga_diaria:
+
+                    faltas = (
+
+                        carga_diaria
+
+                        -
+
+                        worked_seconds
+
+                    )
+
+                elif worked_seconds > carga_diaria:
+
+                    extras = (
+
+                        worked_seconds
+
+                        -
+
+                        carga_diaria
+
+                    )
 
             saldo = (
+
                 worked_seconds
+
                 -
+
                 carga_diaria
+
             )
 
             total_normais += worked_seconds
@@ -483,34 +670,45 @@ def generate_pdf(registration: str):
             total_extras += extras
             total_carga += carga_diaria
 
-            saldo_text = ""
-
             if saldo >= 0:
 
                 saldo_text = (
+
                     "+"
+
                     +
+
                     seconds_to_hours(
                         saldo
                     )
+
                 )
 
             else:
 
                 saldo_text = (
+
                     "-"
+
                     +
+
                     seconds_to_hours(
                         abs(saldo)
                     )
+
                 )
+
+            data_formatada = (
+
+                f"{get_weekday_name(current_date)} "
+
+                f"{current_date.strftime('%d/%m/%Y')}"
+
+            )
 
             table_data.append([
 
-                datetime.strptime(
-                    date,
-                    "%Y-%m-%d"
-                ).strftime("%d/%m/%Y"),
+                data_formatada,
 
                 batidas[0]["time"] if batidas[0] else "",
                 batidas[1]["time"] if batidas[1] else "",
@@ -537,13 +735,14 @@ def generate_pdf(registration: str):
                     carga_diaria
                 ),
 
+                "00:00",
+
                 seconds_to_hours(
                     extras
                 ),
 
-                "00:00",
-
                 saldo_text
+
             ])
 
         # =================================================
@@ -551,45 +750,48 @@ def generate_pdf(registration: str):
         # =================================================
 
         saldo_final = (
-            total_normais
-            -
-            total_carga
-        )
 
-        saldo_final_text = ""
+            total_normais
+
+            -
+
+            total_carga
+
+        )
 
         if saldo_final >= 0:
 
             saldo_final_text = (
+
                 "+"
+
                 +
+
                 seconds_to_hours(
                     saldo_final
                 )
+
             )
 
         else:
 
             saldo_final_text = (
+
                 "-"
+
                 +
+
                 seconds_to_hours(
                     abs(saldo_final)
                 )
+
             )
 
         table_data.append([
 
             "TOTAIS",
 
-            "",
-            "",
-
-            "",
-            "",
-
-            "",
-            "",
+            "", "", "", "", "", "",
 
             seconds_to_hours(
                 total_normais
@@ -607,17 +809,17 @@ def generate_pdf(registration: str):
                 total_carga
             ),
 
+            "00:00",
+
             seconds_to_hours(
                 total_extras
             ),
 
-            "00:00",
-
             saldo_final_text
-        ])
 
+        ])
         # =================================================
-        # TABELA STYLE
+        # TABELA
         # =================================================
 
         table = Table(
@@ -626,7 +828,7 @@ def generate_pdf(registration: str):
 
             colWidths=[
 
-                48,
+                58,
 
                 34,
                 34,
@@ -641,39 +843,191 @@ def generate_pdf(registration: str):
                 40,
                 40,
                 40,
-                36,
+                40,
                 40,
                 42
+
             ]
         )
 
-        table.setStyle(TableStyle([
+        row_styles = []
 
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#00c853")),
+        for row_index in range(
 
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            1,
 
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            len(table_data) - 1
 
-            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+        ):
 
-            ("FONTSIZE", (0, 0), (-1, -1), 5.4),
+            try:
 
-            ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d2d2d2")),
+                data_text = table_data[
+                    row_index
+                ][0]
 
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                data_text = data_text.split(
+                    " "
+                )[1]
 
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                dt = datetime.strptime(
 
-            ("TOPPADDING", (0, 0), (-1, -1), 2),
+                    data_text,
 
-            ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f5f5f5"))
-        ]))
+                    "%d/%m/%Y"
 
-        elements.append(table)
+                )
+
+                is_weekend = (
+                    dt.weekday() >= 5
+                )
+
+                is_holiday = (
+
+                    str(
+                        dt.date()
+                    )
+
+                    in
+
+                    holidays
+
+                )
+
+                if is_weekend or is_holiday:
+
+                    row_styles.append(
+
+                        (
+
+                            "BACKGROUND",
+
+                            (0, row_index),
+
+                            (-1, row_index),
+
+                            colors.HexColor(
+                                "#FFF9C4"
+                            )
+
+                        )
+
+                    )
+
+                    row_styles.append(
+
+                        (
+
+                            "FONTNAME",
+
+                            (0, row_index),
+
+                            (-1, row_index),
+
+                            "Helvetica-Bold"
+
+                        )
+
+                    )
+
+            except:
+
+                pass
+
+        style_list = [
+
+            (
+                "BACKGROUND",
+                (0, 0),
+                (-1, 0),
+                colors.HexColor("#00c853")
+            ),
+
+            (
+                "TEXTCOLOR",
+                (0, 0),
+                (-1, 0),
+                colors.white
+            ),
+
+            (
+                "FONTNAME",
+                (0, 0),
+                (-1, 0),
+                "Helvetica-Bold"
+            ),
+
+            (
+                "FONTNAME",
+                (0, -1),
+                (-1, -1),
+                "Helvetica-Bold"
+            ),
+
+            (
+                "BACKGROUND",
+                (0, -1),
+                (-1, -1),
+                colors.HexColor("#f3f3f3")
+            ),
+
+            (
+                "FONTSIZE",
+                (0, 0),
+                (-1, -1),
+                5.4
+            ),
+
+            (
+                "GRID",
+                (0, 0),
+                (-1, -1),
+                0.35,
+                colors.HexColor("#d2d2d2")
+            ),
+
+            (
+                "ALIGN",
+                (0, 0),
+                (-1, -1),
+                "CENTER"
+            ),
+
+            (
+                "BOTTOMPADDING",
+                (0, 0),
+                (-1, -1),
+                2
+            ),
+
+            (
+                "TOPPADDING",
+                (0, 0),
+                (-1, -1),
+                2
+            )
+
+        ]
+
+        style_list.extend(
+            row_styles
+        )
+
+        table.setStyle(
+            TableStyle(
+                style_list
+            )
+        )
 
         elements.append(
-            Spacer(1, 8)
+            table
+        )
+
+        elements.append(
+            Spacer(
+                1,
+                8
+            )
         )
 
         # =================================================
@@ -682,13 +1036,19 @@ def generate_pdf(registration: str):
 
         resumo = Table([[
             "NORMAIS",
-            seconds_to_hours(total_normais),
+            seconds_to_hours(
+                total_normais
+            ),
 
             "FALTAS",
-            seconds_to_hours(total_faltas),
+            seconds_to_hours(
+                total_faltas
+            ),
 
             "EXTRAS",
-            seconds_to_hours(total_extras),
+            seconds_to_hours(
+                total_extras
+            ),
 
             "SALDO",
             saldo_final_text
@@ -696,27 +1056,78 @@ def generate_pdf(registration: str):
 
         resumo.setStyle(TableStyle([
 
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#00c853")),
+            (
+                "BACKGROUND",
+                (0, 0),
+                (-1, -1),
+                colors.HexColor(
+                    "#00c853"
+                )
+            ),
 
-            ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
+            (
+                "TEXTCOLOR",
+                (0, 0),
+                (-1, -1),
+                colors.white
+            ),
 
-            ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+            (
+                "FONTNAME",
+                (0, 0),
+                (-1, -1),
+                "Helvetica-Bold"
+            ),
 
-            ("FONTSIZE", (0, 0), (-1, -1), 5.8),
+            (
+                "FONTSIZE",
+                (0, 0),
+                (-1, -1),
+                5.8
+            ),
 
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            (
+                "ALIGN",
+                (0, 0),
+                (-1, -1),
+                "CENTER"
+            ),
 
-            ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#00a844")),
+            (
+                "GRID",
+                (0, 0),
+                (-1, -1),
+                0.35,
+                colors.HexColor(
+                    "#00a844"
+                )
+            ),
 
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            (
+                "BOTTOMPADDING",
+                (0, 0),
+                (-1, -1),
+                3
+            ),
 
-            ("TOPPADDING", (0, 0), (-1, -1), 3)
+            (
+                "TOPPADDING",
+                (0, 0),
+                (-1, -1),
+                3
+            )
+
         ]))
 
-        elements.append(resumo)
+        elements.append(
+            resumo
+        )
 
         elements.append(
-            Spacer(1, 16)
+            Spacer(
+                1,
+                16
+            )
         )
 
         # =================================================
@@ -726,34 +1137,66 @@ def generate_pdf(registration: str):
         assinatura = Table([
 
             [
+
                 "__________________________________",
+
                 "__________________________________"
+
             ],
 
             [
+
                 employee.name,
+
                 "Empresa"
+
             ]
+
         ])
 
         assinatura.setStyle(TableStyle([
 
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            (
+                "ALIGN",
+                (0, 0),
+                (-1, -1),
+                "CENTER"
+            ),
 
-            ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+            (
+                "FONTNAME",
+                (0, 0),
+                (-1, -1),
+                "Helvetica"
+            ),
 
-            ("FONTSIZE", (0, 0), (-1, -1), 5.5),
+            (
+                "FONTSIZE",
+                (0, 0),
+                (-1, -1),
+                5.5
+            ),
 
-            ("TOPPADDING", (0, 0), (-1, -1), 5)
+            (
+                "TOPPADDING",
+                (0, 0),
+                (-1, -1),
+                5
+            )
+
         ]))
 
-        elements.append(assinatura)
+        elements.append(
+            assinatura
+        )
 
         # =================================================
         # BUILD
         # =================================================
 
-        doc.build(elements)
+        doc.build(
+            elements
+        )
 
         return FileResponse(
 
@@ -762,20 +1205,33 @@ def generate_pdf(registration: str):
             filename=pdf_path,
 
             media_type="application/pdf"
+
         )
 
     except Exception as e:
 
-        print("================================")
-        print("ERRO PDF")
-        print(str(e))
-        print("================================")
+        print(
+            "================================"
+        )
+
+        print(
+            "ERRO PDF"
+        )
+
+        print(
+            str(e)
+        )
+
+        print(
+            "================================"
+        )
 
         return {
 
             "success": False,
 
             "error": str(e)
+
         }
 
     finally:
