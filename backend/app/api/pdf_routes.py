@@ -1,5 +1,12 @@
-from fastapi import APIRouter
+print("####################################")
+print("PDF_ROUTES CARREGADO")
+print(__file__)
+print("####################################")
+
+
+from fastapi import APIRouter, Query
 from fastapi.responses import FileResponse
+
 
 from collections import defaultdict
 from datetime import datetime
@@ -9,7 +16,8 @@ from reportlab.platypus import (
     Table,
     TableStyle,
     Paragraph,
-    Spacer
+    Spacer,
+    PageBreak
 )
 
 from reportlab.lib import colors
@@ -26,6 +34,11 @@ from app.models.employee import Employee
 from app.models.time_record import TimeRecord
 from app.models.scale import Scale
 from app.models.holiday import Holiday
+from zipfile import ZipFile
+import tempfile
+import os
+
+from PySide6.QtWidgets import QFileDialog
 
 router = APIRouter()
 
@@ -115,7 +128,13 @@ def get_weekday_name(dt):
     "/timesheet/pdf/{registration}"
 )
 def generate_pdf(
-    registration: str
+
+    registration: str,
+
+    start_date: str | None = Query(None),
+
+    end_date: str | None = Query(None)
+
 ):
 
     db = SessionLocal()
@@ -147,21 +166,21 @@ def generate_pdf(
 
             }
 
+        schedule_name = (
+            employee.schedule or ""
+        ).strip()
+
         scale = db.query(
             Scale
         ).filter(
-
-            Scale.name
-            ==
-            employee.schedule
-
+            Scale.name == schedule_name
         ).first()
 
         # =================================================
         # REGISTROS
         # =================================================
 
-        records = db.query(
+        query = db.query(
             TimeRecord
         ).filter(
 
@@ -169,7 +188,35 @@ def generate_pdf(
             ==
             registration
 
-        ).order_by(
+        )
+
+        if start_date:
+
+            query = query.filter(
+
+                TimeRecord.record_time
+                >=
+                datetime.strptime(
+                    start_date,
+                    "%Y-%m-%d"
+                )
+
+            )
+
+        if end_date:
+
+            query = query.filter(
+
+                TimeRecord.record_time
+                <=
+                datetime.strptime(
+                    end_date,
+                    "%Y-%m-%d"
+                )
+
+            )
+
+        records = query.order_by(
 
             TimeRecord.record_time.asc()
 
@@ -1237,3 +1284,5 @@ def generate_pdf(
     finally:
 
         db.close()
+
+

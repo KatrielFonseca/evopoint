@@ -119,6 +119,21 @@ class EmployeesPage(QWidget):
 
         title = QLabel("Funcionários")
 
+        header_layout = QHBoxLayout()
+
+        title = QLabel("Funcionários")
+
+        # CAMPO BUSCA
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText(
+            "Buscar funcionário..."
+        )
+        self.search_input.setFixedWidth(250)
+
+        self.search_input.textChanged.connect(
+            self.filter_employees
+        )
+
         title.setStyleSheet("""
 
             font-size: 34px;
@@ -130,6 +145,10 @@ class EmployeesPage(QWidget):
             background: transparent;
 
         """)
+
+
+
+        
 
         refresh_button = QPushButton(
             "Atualizar"
@@ -152,6 +171,19 @@ class EmployeesPage(QWidget):
         header_layout.addWidget(title)
 
         header_layout.addStretch()
+
+        # CAMPO BUSCA
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText(
+            "Buscar funcionário..."
+        )
+        self.search_input.setFixedWidth(250)
+
+        self.search_input.textChanged.connect(
+            self.filter_employees
+        )
+
+        header_layout.addWidget(self.search_input)
 
         header_layout.addWidget(refresh_button)
 
@@ -1111,3 +1143,24 @@ class EmployeesPage(QWidget):
             "Modo edição",
             "Funcionário carregado para edição."
         )
+    # =====================================================
+    # BUSCA
+    # =====================================================
+
+    def filter_employees(self):
+
+        texto = self.search_input.text().lower()
+
+        for row in range(self.table.rowCount()):
+
+            nome_item = self.table.item(row, 1)
+
+            if not nome_item:
+                continue
+
+            nome = nome_item.text().lower()
+
+            self.table.setRowHidden(
+                row,
+                texto not in nome
+            )

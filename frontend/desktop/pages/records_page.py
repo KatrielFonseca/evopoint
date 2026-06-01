@@ -22,7 +22,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QComboBox,
     QHeaderView,
-    QAbstractItemView
+    QAbstractItemView,
+    QDateEdit
 )
 
 API_URL = "http://127.0.0.1:8000"
@@ -207,6 +208,35 @@ class RecordsPage(QWidget):
         # =================================================
 
         self.employee_combo = QComboBox()
+        from PySide6.QtCore import QDate
+
+        self.start_date = QDateEdit()
+
+        self.start_date.setCalendarPopup(
+            True
+        )
+
+        self.start_date.setDate(
+            QDate.currentDate().addMonths(-1)
+        )
+
+        self.start_date.setMinimumHeight(
+            50
+        )
+
+        self.end_date = QDateEdit()
+
+        self.end_date.setCalendarPopup(
+            True
+        )
+
+        self.end_date.setDate(
+            QDate.currentDate()
+        )
+
+        self.end_date.setMinimumHeight(
+            50
+        )
 
         self.employee_combo.setMinimumHeight(50)
 
@@ -247,6 +277,14 @@ class RecordsPage(QWidget):
             self.employee_combo
         )
 
+        top_layout.addWidget(
+            self.start_date
+        )
+
+        top_layout.addWidget(
+            self.end_date
+        )
+
         # =================================================
         # PDF BUTTON
         # =================================================
@@ -254,6 +292,50 @@ class RecordsPage(QWidget):
         pdf_button = QPushButton(
             "Gerar PDF"
         )
+        pdf_all_button = QPushButton(
+            "PDF Todos"
+        )
+
+        pdf_all_button.setMinimumHeight(50)
+
+        pdf_all_button.setCursor(
+            Qt.PointingHandCursor
+        )
+
+        pdf_all_button.clicked.connect(
+            self.generate_all_pdfs
+        )
+
+        pdf_all_button.setStyleSheet("""
+
+            QPushButton {
+
+                background: #00C853;
+
+                color: white;
+
+                border: none;
+
+                border-radius: 14px;
+
+                padding: 14px 22px;
+
+                font-size: 13px;
+
+                font-weight: 700;
+            }
+
+            QPushButton:hover {
+
+                background: #00B248;
+            }
+
+            QPushButton:pressed {
+
+                background: #00963D;
+            }
+
+        """)
 
         pdf_button.clicked.connect(
             self.generate_pdf
@@ -297,6 +379,10 @@ class RecordsPage(QWidget):
         """)
 
         top_layout.addWidget(pdf_button)
+
+        top_layout.addWidget(
+            pdf_all_button
+        )
 
         main_layout.addWidget(top_card)
 
@@ -1047,8 +1133,26 @@ class RecordsPage(QWidget):
 
                 return
 
+            start_date = self.start_date.date().toString(
+                "yyyy-MM-dd"
+            )
+
+            end_date = self.end_date.date().toString(
+                "yyyy-MM-dd"
+            )
+
             response = requests.get(
-                f"{API_URL}/timesheet/pdf/{registration}"
+
+                f"{API_URL}/timesheet/pdf/{registration}",
+
+                params={
+
+                    "start_date": start_date,
+
+                    "end_date": end_date
+
+                }
+
             )
 
             if response.status_code != 200:
@@ -1075,6 +1179,119 @@ class RecordsPage(QWidget):
                 pdf_file.write(response.content)
 
             webbrowser.open(pdf_path)
+
+        except Exception as e:
+
+            QMessageBox.critical(
+                self,
+                "Erro",
+                str(e)
+            )
+
+    # =================================================
+    # PDF TODOS
+    # =================================================
+
+    def generate_all_pdfs(self):
+
+        try:
+
+            response = requests.get(
+                f"{API_URL}/employees"
+            )
+
+            employees = response.json()
+
+            if not employees:
+
+                QMessageBox.warning(
+                    self,
+                    "EVOPoint",
+                    "Nenhum funcionário encontrado."
+                )
+
+                return
+
+            import tempfile
+            import os
+            import webbrowser
+
+            from datetime import datetime
+
+            nome_pasta = datetime.now().strftime(
+                "PDFS_%d%m%Y_%H%M"
+            )
+
+            pasta = os.path.join(
+                tempfile.gettempdir(),
+                nome_pasta
+            )
+
+            os.makedirs(
+                pasta,
+                exist_ok=True
+            )
+
+            start_date = self.start_date.date().toString(
+                "yyyy-MM-dd"
+            )
+
+            end_date = self.end_date.date().toString(
+                "yyyy-MM-dd"
+            )
+
+            total = 0
+
+            for employee in employees:
+
+                registration = employee["registration"]
+
+                pdf_response = requests.get(
+
+                    f"{API_URL}/timesheet/pdf/{registration}",
+
+                    params={
+
+                        "start_date": start_date,
+
+                        "end_date": end_date
+
+                    }
+
+                )
+
+                if pdf_response.status_code == 200:
+
+                    caminho = os.path.join(
+
+                        pasta,
+
+                        f"{registration}.pdf"
+
+                    )
+
+                    with open(
+                        caminho,
+                        "wb"
+                    ) as f:
+
+                        f.write(
+                            pdf_response.content
+                        )
+
+                    total += 1
+
+            QMessageBox.information(
+
+                self,
+
+                "EVOPoint",
+
+                f"{total} PDFs gerados em:\n\n{pasta}"
+
+            )
+
+            webbrowser.open(pasta)
 
         except Exception as e:
 
