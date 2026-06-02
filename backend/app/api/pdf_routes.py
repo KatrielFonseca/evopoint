@@ -520,6 +520,7 @@ def generate_pdf(
             "EXTRAS",
             "CARGA",
             "EX0%",
+            "EX50%",
             "EX100%",
             "BSALDO"
 
@@ -527,7 +528,11 @@ def generate_pdf(
 
         total_normais = 0
         total_faltas = 0
-        total_extras = 0
+
+        total_extras_0 = 0
+        total_extras_50 = 0
+        total_extras_100 = 0
+
         total_carga = 0
 
         carga_diaria = parse_schedule(
@@ -634,7 +639,10 @@ def generate_pdf(
                         worked_seconds += sec
 
             faltas = 0
-            extras = 0
+
+            extras_0 = 0
+            extras_50 = 0
+            extras_100 = 0
 
             # ==========================================
             # FERIADO = 100%
@@ -642,7 +650,7 @@ def generate_pdf(
 
             if is_holiday:
 
-                extras = worked_seconds
+                extras_100 = worked_seconds
 
             # ==========================================
             # DOMINGO FOLGA = 100%
@@ -658,7 +666,7 @@ def generate_pdf(
 
             ):
 
-                extras = worked_seconds
+                extras_100 = worked_seconds
 
             # ==========================================
             # SÁBADO FOLGA = 100%
@@ -674,7 +682,7 @@ def generate_pdf(
 
             ):
 
-                extras = worked_seconds
+                extras_50 = worked_seconds
 
             else:
 
@@ -692,7 +700,7 @@ def generate_pdf(
 
                 elif worked_seconds > carga_diaria:
 
-                    extras = (
+                    extras_0 = (
 
                         worked_seconds
 
@@ -714,7 +722,9 @@ def generate_pdf(
 
             total_normais += worked_seconds
             total_faltas += faltas
-            total_extras += extras
+            total_extras_0 += extras_0
+            total_extras_50 += extras_50
+            total_extras_100 += extras_100
             total_carga += carga_diaria
 
             if saldo >= 0:
@@ -767,7 +777,10 @@ def generate_pdf(
                 batidas[5]["time"] if batidas[5] else "",
 
                 seconds_to_hours(
-                    worked_seconds
+                    min(
+                        worked_seconds,
+                        carga_diaria
+                    )
                 ),
 
                 seconds_to_hours(
@@ -775,21 +788,30 @@ def generate_pdf(
                 ),
 
                 seconds_to_hours(
-                    extras
+                    extras_0
+                    +
+                    extras_50
+                    +
+                    extras_100
                 ),
 
                 seconds_to_hours(
                     carga_diaria
                 ),
 
-                "00:00",
+                seconds_to_hours(
+                    extras_0
+                ),
 
                 seconds_to_hours(
-                    extras
+                    extras_50
+                ),
+
+                seconds_to_hours(
+                    extras_100
                 ),
 
                 saldo_text
-
             ])
 
         # =================================================
@@ -849,17 +871,33 @@ def generate_pdf(
             ),
 
             seconds_to_hours(
-                total_extras
+
+                total_extras_0
+
+                +
+
+                total_extras_50
+
+                +
+
+                total_extras_100
+
             ),
 
             seconds_to_hours(
                 total_carga
             ),
 
-            "00:00",
+            seconds_to_hours(
+                total_extras_0
+            ),
 
             seconds_to_hours(
-                total_extras
+                total_extras_50
+            ),
+
+            seconds_to_hours(
+                total_extras_100
             ),
 
             saldo_final_text
@@ -873,26 +911,24 @@ def generate_pdf(
 
             table_data,
 
-            colWidths=[
+           colWidths=[
 
                 58,
 
-                34,
-                34,
+                34,34,
 
-                34,
-                34,
+                34,34,
 
-                34,
-                34,
+                34,34,
 
-                40,
-                40,
-                40,
-                40,
-                40,
-                40,
-                42
+                40,  # NORMAIS
+                40,  # FALTAS
+                40,  # EXTRAS
+                40,  # CARGA
+                40,  # EX0
+                40,  # EX50
+                40,  # EX100
+                42   # BSALDO
 
             ]
         )
@@ -1094,7 +1130,17 @@ def generate_pdf(
 
             "EXTRAS",
             seconds_to_hours(
-                total_extras
+
+                total_extras_0
+
+                +
+
+                total_extras_50
+
+                +
+
+                total_extras_100
+
             ),
 
             "SALDO",

@@ -54,3 +54,5 @@ class Employee(Base):
     # STATUS
 
     active = Column(Boolean, default=True)
+
+    whatsapp = Column(String(20), nullable=True)

@@ -14,3 +14,5 @@ class EmployeeCreate(BaseModel):
     role: str
 
     schedule: str
+
+    whatsapp: str | None = None

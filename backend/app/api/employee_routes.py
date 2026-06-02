@@ -179,7 +179,11 @@ def create_employee(employee: EmployeeCreate):
 
             role=employee.role,
 
+            whatsapp=data.whatsapp,
+
             schedule=employee.schedule
+
+            
         )
 
         db.add(new_employee)
@@ -328,6 +332,8 @@ def update_employee(
         employee.company = employee_data.company
 
         employee.department = employee_data.department
+
+        employee.whatsapp = data.whatsapp
 
         employee.role = employee_data.role
 

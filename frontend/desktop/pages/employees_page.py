@@ -1,8 +1,10 @@
 import requests
 
+
 from PySide6.QtCore import (
     Qt,
-    QTimer
+    QTimer,
+    QDate
 )
 
 from PySide6.QtGui import (
@@ -24,7 +26,10 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QComboBox,
     QHeaderView,
-    QAbstractItemView
+    QAbstractItemView,
+    QDateEdit,
+    QScrollArea,
+    QSizePolicy
 )
 
 API_URL = "http://127.0.0.1:8000/employees"
@@ -98,7 +103,16 @@ class EmployeesPage(QWidget):
 
         """)
 
-        main_layout = QVBoxLayout()
+       
+        scroll = QScrollArea()
+
+        scroll.setWidgetResizable(True)
+
+        scroll.setFrameShape(QFrame.NoFrame)
+
+        content = QWidget()
+
+        main_layout = QVBoxLayout(content)
 
         main_layout.setContentsMargins(
             35,
@@ -109,7 +123,20 @@ class EmployeesPage(QWidget):
 
         main_layout.setSpacing(24)
 
-        self.setLayout(main_layout)
+        scroll.setWidget(content)
+
+        root_layout = QVBoxLayout()
+
+        root_layout.setContentsMargins(
+            0,
+            0,
+            0,
+            0
+        )
+
+        root_layout.addWidget(scroll)
+
+        self.setLayout(root_layout)
 
         # =====================================================
         # HEADER
@@ -195,6 +222,11 @@ class EmployeesPage(QWidget):
 
         form_container = QFrame()
 
+        from PySide6.QtWidgets import QSizePolicy
+
+
+        
+
         form_container.setStyleSheet("""
 
             QFrame {
@@ -217,7 +249,7 @@ class EmployeesPage(QWidget):
 
         form_layout.setHorizontalSpacing(16)
 
-        form_layout.setVerticalSpacing(16)
+        form_layout.setVerticalSpacing(18)
 
         form_container.setLayout(
             form_layout
@@ -289,6 +321,48 @@ class EmployeesPage(QWidget):
             "Cargo"
         )
 
+        self.admission_date_input = QDateEdit()
+
+        self.admission_date_input.setStyleSheet("""
+
+            QDateEdit {
+
+                background: #F7F8FA;
+
+                border: 1px solid #E5E7EB;
+
+                border-radius: 14px;
+
+                padding-left: 14px;
+
+                font-size: 13px;
+
+            }
+
+            QDateEdit:focus {
+
+                border: 1px solid #00C853;
+
+            }
+
+        """)
+
+        self.admission_date_input.setCalendarPopup(
+            True
+        )
+
+        self.admission_date_input.setDate(
+            QDate.currentDate()
+        )
+
+        self.admission_date_input.setFixedHeight(
+            46
+        )
+
+        self.whatsapp_input = self.create_input(
+            "WhatsApp"
+        )
+
         self.schedule_input = self.create_combo([])
 
         # =====================================================
@@ -344,9 +418,23 @@ class EmployeesPage(QWidget):
         )
 
         form_layout.addWidget(
-            self.schedule_input,
+            self.admission_date_input,
             4,
             0
+        )
+
+        form_layout.addWidget(
+            self.whatsapp_input,
+            4,
+            1
+        )
+
+        form_layout.addWidget(
+            self.schedule_input,
+            5,
+            0,
+            1,
+            2
         )
 
         # =====================================================
@@ -361,7 +449,7 @@ class EmployeesPage(QWidget):
             self.create_employee
         )
 
-        self.save_button.setMinimumHeight(50)
+        self.save_button.setFixedHeight(42)
 
         self.save_button.setCursor(
             Qt.PointingHandCursor
@@ -373,8 +461,10 @@ class EmployeesPage(QWidget):
 
         form_layout.addWidget(
             self.save_button,
-            4,
-            1
+            6,
+            0,
+            1,
+            2
         )
 
         main_layout.addWidget(
@@ -573,7 +663,7 @@ class EmployeesPage(QWidget):
             placeholder
         )
 
-        field.setMinimumHeight(50)
+        field.setFixedHeight(46)
 
         field.setStyleSheet("""
 
@@ -609,7 +699,7 @@ class EmployeesPage(QWidget):
 
         combo.addItems(items)
 
-        combo.setMinimumHeight(50)
+        combo.setFixedHeight(46)
 
         combo.setStyleSheet("""
 
@@ -933,6 +1023,14 @@ class EmployeesPage(QWidget):
 
             data = {
 
+                "admission_date":
+                self.admission_date_input.date().toString(
+                    "yyyy-MM-dd"
+                ),
+
+                "whatsapp":
+                self.whatsapp_input.text().strip(),
+
                 "name":
                 self.name_input.text().strip(),
 
@@ -1040,6 +1138,12 @@ class EmployeesPage(QWidget):
 
         self.schedule_input.setCurrentIndex(0)
 
+        self.whatsapp_input.clear()
+
+        self.admission_date_input.setDate(
+            QDate.currentDate()
+        )
+
     # =====================================================
     # DELETE
     # =====================================================
@@ -1095,6 +1199,29 @@ class EmployeesPage(QWidget):
     # =====================================================
 
     def edit_employee(self, employee):
+
+        self.whatsapp_input.setText(
+            employee.get(
+                "whatsapp",
+                ""
+            )
+        )
+
+        if employee.get(
+            "admission_date"
+        ):
+
+            self.admission_date_input.setDate(
+
+                QDate.fromString(
+
+                    employee["admission_date"],
+
+                    "yyyy-MM-dd"
+
+                )
+
+            )
 
         self.editing_employee_id = employee["id"]
 
