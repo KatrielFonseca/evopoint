@@ -57,7 +57,11 @@ def list_employees():
 
                 "role": emp.role or "",
 
+                "whatsapp": emp.whatsapp or "",
+
                 "schedule": emp.schedule or ""
+
+                
             })
 
         return result
@@ -179,7 +183,7 @@ def create_employee(employee: EmployeeCreate):
 
             role=employee.role,
 
-            whatsapp=data.whatsapp,
+            whatsapp=employee.whatsapp,
 
             schedule=employee.schedule
 
@@ -333,7 +337,7 @@ def update_employee(
 
         employee.department = employee_data.department
 
-        employee.whatsapp = data.whatsapp
+        employee.whatsapp = employee_data.whatsapp
 
         employee.role = employee_data.role
 
