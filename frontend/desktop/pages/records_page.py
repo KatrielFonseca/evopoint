@@ -63,6 +63,8 @@ class RecordsPage(QWidget):
             self.on_cell_changed
         )
 
+        
+
         # =====================================
         # AUTO REFRESH
         # =====================================
@@ -420,23 +422,20 @@ class RecordsPage(QWidget):
 
         self.table = QTableWidget()
 
-        self.table.setColumnCount(9)
+        self.table.setColumnCount(10)
 
         self.table.setHorizontalHeaderLabels([
 
             "Data",
             "Funcionário",
-
             "Entrada 1",
             "Saída 1",
-
             "Entrada 2",
             "Saída 2",
-
             "Entrada 3",
             "Saída 3",
-
-            "Horas"
+            "Horas",
+            "Ações"
         ])
 
         self.table.setStyleSheet("""
@@ -544,6 +543,8 @@ class RecordsPage(QWidget):
             Qt.StrongFocus
         )
 
+        self.table.keyPressEvent = self.table_key_press
+
         self.table.setAlternatingRowColors(
             False
         )
@@ -582,6 +583,8 @@ class RecordsPage(QWidget):
 
             if self.table.state() == QTableWidget.EditingState:
                 return
+
+            self.load_employees()
 
             self.load_records()
 
@@ -831,6 +834,50 @@ class RecordsPage(QWidget):
                     row,
                     8,
                     horas_item
+                )
+
+                delete_button = QPushButton("🗑")
+
+                delete_button.setCursor(
+                    Qt.PointingHandCursor
+                )
+
+                delete_button.setStyleSheet("""
+
+                    QPushButton {
+
+                        background: #FF5252;
+
+                        color: white;
+
+                        border: none;
+
+                        border-radius: 8px;
+
+                        font-weight: bold;
+
+                        padding: 6px;
+                    }
+
+                    QPushButton:hover {
+
+                        background: #E53935;
+                    }
+
+                """)
+
+                delete_button.clicked.connect(
+
+                    lambda checked=False,
+                    data=record:
+                    self.delete_day(data)
+
+                )
+
+                self.table.setCellWidget(
+                    row,
+                    9,
+                    delete_button
                 )
 
         except Exception as e:
@@ -1299,4 +1346,128 @@ class RecordsPage(QWidget):
                 self,
                 "Erro",
                 str(e)
+            )
+    def delete_day(self, record):
+
+        confirm = QMessageBox.question(
+
+            self,
+
+            "Excluir",
+
+            f"Excluir todos os registros de {record['date']} ?"
+
+        )
+
+        if confirm != QMessageBox.Yes:
+            return
+
+        QMessageBox.information(
+
+            self,
+
+            "EVOPoint",
+
+            "Backend de exclusão já está pronto.\nAgora vamos ligar o botão à API."
+
+        )            
+
+    # =================================================
+    # DELETE REGISTRO
+    # =================================================
+
+    def delete_record(self, record_id):
+
+        try:
+
+            response = requests.delete(
+
+                f"{API_URL}/time-records/{record_id}"
+
+            )
+
+            if response.status_code != 200:
+
+                QMessageBox.warning(
+
+                    self,
+
+                    "Erro",
+
+                    response.text
+
+                )
+
+                return
+
+            self.load_records()
+
+            QMessageBox.information(
+
+                self,
+
+                "Sucesso",
+
+                "Registro excluído."
+
+            )
+
+        except Exception as e:
+
+            QMessageBox.critical(
+
+                self,
+
+                "Erro",
+
+                str(e)
+
+            )    
+    def table_key_press(self, event):
+
+        if event.key() == Qt.Key_Delete:
+
+            row = self.table.currentRow()
+            col = self.table.currentColumn()
+
+            if row < 0:
+                return
+
+            if col < 2 or col > 7:
+                return
+
+            item = self.table.item(row, col)
+
+            if not item:
+                return
+
+            metadata = item.data(Qt.UserRole)
+
+            if not metadata:
+                return
+
+            record_id = metadata.get("record_id")
+
+            if not record_id:
+                return
+
+            confirm = QMessageBox.question(
+
+                self,
+
+                "Excluir Registro",
+
+                f"Excluir o registro {item.text()} ?"
+
+            )
+
+            if confirm == QMessageBox.Yes:
+
+                self.delete_record(record_id)
+
+        else:
+
+            QTableWidget.keyPressEvent(
+                self.table,
+                event
             )

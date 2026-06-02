@@ -469,3 +469,52 @@ def create_manual_record(
     finally:
 
         db.close()
+
+# =====================================================
+# EXCLUIR REGISTRO
+# =====================================================
+
+@router.delete("/time-records/{record_id}")
+def delete_record(record_id: int):
+
+    db = SessionLocal()
+
+    try:
+
+        record = db.query(TimeRecord).filter(
+            TimeRecord.id == record_id
+        ).first()
+
+        if not record:
+
+            return {
+                "success": False,
+                "message": "Registro não encontrado"
+            }
+
+        db.delete(record)
+
+        db.commit()
+
+        print("================================")
+        print("REGISTRO EXCLUÍDO")
+        print(record.id)
+        print("================================")
+
+        return {
+            "success": True,
+            "message": "Registro excluído"
+        }
+
+    except Exception as e:
+
+        db.rollback()
+
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+    finally:
+
+        db.close()
