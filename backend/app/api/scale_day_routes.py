@@ -69,6 +69,28 @@ def create_scale_day(
             detail="Escala não encontrada."
         )
 
+    existing = db.query(ScaleDay).filter(
+        ScaleDay.scale_id == day.scale_id,
+        ScaleDay.day_name == day.day_name
+    ).first()
+
+    if existing:
+
+        existing.entry_1 = day.entry_1
+        existing.exit_1 = day.exit_1
+
+        existing.entry_2 = day.entry_2
+        existing.exit_2 = day.exit_2
+
+        existing.entry_3 = day.entry_3
+        existing.exit_3 = day.exit_3
+
+        db.commit()
+
+        db.refresh(existing)
+
+        return existing
+
     new_day = ScaleDay(
 
         scale_id=day.scale_id,

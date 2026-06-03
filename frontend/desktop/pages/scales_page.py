@@ -19,10 +19,279 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QCheckBox,
     QHeaderView,
-    QAbstractItemView
+    QAbstractItemView,
+    QDialog,
+    QTableWidget,
+    QTableWidgetItem
 )
 
 API_URL = "http://127.0.0.1:8000/scales"
+SCALE_DAYS_URL = "http://127.0.0.1:8000/scale-days"
+
+
+
+class ScaleDaysDialog(QDialog):
+
+    def __init__(
+        self,
+        scale_id,
+        scale_name,
+        parent=None
+    ):
+
+
+        self.scale_id = scale_id
+
+        self.scale_name = scale_name
+
+        super().__init__(parent)
+
+        self.setWindowTitle(
+            "Configuração Individual de Dias"
+        )
+
+        self.resize(900, 500)
+
+        layout = QVBoxLayout()
+
+        self.setLayout(layout)
+
+        title = QLabel(
+            f"Configuração dos Dias - {scale_name}"
+        )
+
+        title.setStyleSheet(
+            "font-size:22px;font-weight:bold;"
+        )
+
+        layout.addWidget(title)
+
+        self.table = QTableWidget()
+
+        self.table.setColumnCount(7)
+
+        self.table.setHorizontalHeaderLabels([
+
+            "Dia",
+            "Entrada 1",
+            "Saída 1",
+            "Entrada 2",
+            "Saída 2",
+            "Entrada 3",
+            "Saída 3"
+
+        ])
+
+        self.table.setRowCount(7)
+
+        for row in range(7):
+
+            for col in range(1, 7):
+
+                self.table.setItem(
+                    row,
+                    col,
+                    QTableWidgetItem("")
+                )
+
+        dias = [
+            "SEG",
+            "TER",
+            "QUA",
+            "QUI",
+            "SEX",
+            "SAB",
+            "DOM"
+        ]
+
+        for row, dia in enumerate(dias):
+
+            self.table.setItem(
+                row,
+                0,
+                QTableWidgetItem(dia)
+            )
+
+        self.table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Stretch
+        )
+
+        layout.addWidget(
+            self.table
+        )
+
+        salvar = QPushButton(
+            "Salvar Dias"
+        )
+
+        salvar.clicked.connect(
+            self.save_days
+        )
+
+        layout.addWidget(
+            salvar
+        )
+
+
+        self.load_days()
+
+
+    def save_days(self):
+
+        try:
+
+            dias = [
+                "MONDAY",
+                "TUESDAY",
+                "WEDNESDAY",
+                "THURSDAY",
+                "FRIDAY",
+                "SATURDAY",
+                "SUNDAY"
+            ]
+
+            for row, day_name in enumerate(dias):
+
+                data = {
+
+                    "scale_id": self.scale_id,
+
+                    "day_name": day_name,
+
+                    "entry_1": self.get_text(row, 1),
+
+                    "exit_1": self.get_text(row, 2),
+
+                    "entry_2": self.get_text(row, 3),
+
+                    "exit_2": self.get_text(row, 4),
+
+                    "entry_3": self.get_text(row, 5),
+
+                    "exit_3": self.get_text(row, 6)
+
+                }
+
+                response = requests.post(
+                    SCALE_DAYS_URL,
+                    json=data
+                )
+
+                print("STATUS:", response.status_code)
+                print("RESPOSTA:", response.text)
+
+            QMessageBox.information(
+                self,
+                "Sucesso",
+                "Dias salvos com sucesso."
+            )
+
+            self.accept()
+
+        except Exception as e:
+
+            QMessageBox.critical(
+                self,
+                "Erro",
+                str(e)
+            )
+
+
+    def get_text(self, row, col):
+
+        item = self.table.item(
+            row,
+            col
+        )
+
+        if item:
+
+            return item.text().strip()
+
+        return None
+    
+
+    def load_days(self):
+
+        try:
+
+            response = requests.get(
+                f"{SCALE_DAYS_URL}/{self.scale_id}"
+            )
+
+            if response.status_code != 200:
+
+                return
+
+            days = response.json()
+
+            row_map = {
+
+                "MONDAY": 0,
+                "TUESDAY": 1,
+                "WEDNESDAY": 2,
+                "THURSDAY": 3,
+                "FRIDAY": 4,
+                "SATURDAY": 5,
+                "SUNDAY": 6
+
+            }
+
+            for day in days:
+
+                row = row_map.get(
+                    day["day_name"]
+                )
+
+                if row is None:
+
+                    continue
+
+                self.table.item(
+                    row,
+                    1
+                ).setText(
+                    day.get("entry_1") or ""
+                )
+
+                self.table.item(
+                    row,
+                    2
+                ).setText(
+                    day.get("exit_1") or ""
+                )
+
+                self.table.item(
+                    row,
+                    3
+                ).setText(
+                    day.get("entry_2") or ""
+                )
+
+                self.table.item(
+                    row,
+                    4
+                ).setText(
+                    day.get("exit_2") or ""
+                )
+
+                self.table.item(
+                    row,
+                    5
+                ).setText(
+                    day.get("entry_3") or ""
+                )
+
+                self.table.item(
+                    row,
+                    6
+                ).setText(
+                    day.get("exit_3") or ""
+                )
+
+        except Exception as e:
+
+            print("ERRO LOAD DAYS:", e)
 
 
 class ScalesPage(QWidget):
@@ -253,6 +522,23 @@ class ScalesPage(QWidget):
             "Cadastrar Escala"
         )
 
+
+        self.days_button = QPushButton(
+            "Configurar Dias"
+        )
+
+        self.days_button.setMinimumHeight(50)
+
+        self.days_button.setStyleSheet(
+            self.green_button()
+        )
+
+        self.days_button.clicked.connect(
+            self.configure_days
+        )
+
+
+
         self.save_button.clicked.connect(
             self.save_scale
         )
@@ -263,10 +549,22 @@ class ScalesPage(QWidget):
 
         self.save_button.setMinimumHeight(50)
 
-        form_layout.addWidget(
-            self.save_button,
+        buttons_layout = QHBoxLayout()
+
+        buttons_layout.addWidget(
+            self.save_button
+        )
+
+        buttons_layout.addWidget(
+            self.days_button
+        )
+
+        form_layout.addLayout(
+            buttons_layout,
             3,
-            3
+            2,
+            1,
+            2
         )
 
         main_layout.addWidget(
@@ -482,6 +780,21 @@ class ScalesPage(QWidget):
                 actions_widget.setLayout(
                     actions_layout
                 )
+                
+                days_button = QPushButton("📅")
+
+                days_button.setFixedSize(
+                    36,
+                    36
+                )
+
+                days_button.clicked.connect(
+
+                    lambda checked=False,
+                    scale=scale:
+                    self.configure_scale_days(scale)
+
+                )
 
                 edit_button = QPushButton("✏")
 
@@ -511,6 +824,10 @@ class ScalesPage(QWidget):
                     scale_id=scale["id"]:
                     self.delete_scale(scale_id)
 
+                )
+
+                actions_layout.addWidget(
+                    days_button
                 )
 
                 actions_layout.addWidget(
@@ -778,3 +1095,21 @@ class ScalesPage(QWidget):
         self.save_button.setText(
             "Cadastrar Escala"
         )
+    
+    def configure_days(self):
+
+        QMessageBox.information(
+            self,
+            "EVOPoint",
+            "Use o botão 📅 da escala desejada."
+        )
+    
+    def configure_scale_days(self, scale):
+
+        dialog = ScaleDaysDialog(
+            scale["id"],
+            scale["name"],
+            self
+        )
+
+        dialog.exec()

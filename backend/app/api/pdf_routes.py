@@ -7,7 +7,7 @@ print("####################################")
 from fastapi import APIRouter, Query
 from fastapi.responses import FileResponse
 
-
+from app.models.scale_day import ScaleDay
 from collections import defaultdict
 from datetime import datetime
 
@@ -101,6 +101,78 @@ def parse_schedule(scale):
         return 8 * 3600
 
 
+def parse_scale_day(day):
+
+    total = 0
+
+    try:
+
+        if day.entry_1 and day.exit_1:
+
+            e1 = datetime.strptime(
+                day.entry_1[:5],
+                "%H:%M"
+            )
+
+            s1 = datetime.strptime(
+                day.exit_1[:5],
+                "%H:%M"
+            )
+
+            total += (
+                s1 - e1
+            ).seconds
+
+    except:
+        pass
+
+    try:
+
+        if day.entry_2 and day.exit_2:
+
+            e2 = datetime.strptime(
+                day.entry_2[:5],
+                "%H:%M"
+            )
+
+            s2 = datetime.strptime(
+                day.exit_2[:5],
+                "%H:%M"
+            )
+
+            total += (
+                s2 - e2
+            ).seconds
+
+    except:
+        pass
+
+    try:
+
+        if day.entry_3 and day.exit_3:
+
+            e3 = datetime.strptime(
+                day.entry_3[:5],
+                "%H:%M"
+            )
+
+            s3 = datetime.strptime(
+                day.exit_3[:5],
+                "%H:%M"
+            )
+
+            total += (
+                s3 - e3
+            ).seconds
+
+    except:
+        pass
+
+    return total
+
+
+
+
 def get_weekday_name(dt):
 
     dias = [
@@ -118,6 +190,34 @@ def get_weekday_name(dt):
     return dias[
         dt.weekday()
     ]
+
+def format_day_schedule(day):
+
+    if not day:
+
+        return "Folga"
+
+    horarios = []
+
+    if day.entry_1 and day.exit_1:
+
+        horarios.append(
+            f"{day.entry_1} {day.exit_1}"
+        )
+
+    if day.entry_2 and day.exit_2:
+
+        horarios.append(
+            f"{day.entry_2} {day.exit_2}"
+        )
+
+    if day.entry_3 and day.exit_3:
+
+        horarios.append(
+            f"{day.entry_3} {day.exit_3}"
+        )
+
+    return " | ".join(horarios)
 
 
 # =========================================================
@@ -382,52 +482,48 @@ def generate_pdf(
 
         )
 
-        # =================================================
-        # INFO FUNCIONÁRIO
-        # =================================================
-
         if scale:
 
-            seg = (
-                f"{scale.entry_1} {scale.exit_1} "
-                f"{scale.entry_2} {scale.exit_2}"
-                if scale.monday else "Folga"
+            scale_days = db.query(
+                ScaleDay
+            ).filter(
+                ScaleDay.scale_id == scale.id
+            ).all()
+
+            days_map = {
+
+                day.day_name: day
+
+                for day in scale_days
+
+            }
+
+            seg = format_day_schedule(
+                days_map.get("MONDAY")
             )
 
-            ter = (
-                f"{scale.entry_1} {scale.exit_1} "
-                f"{scale.entry_2} {scale.exit_2}"
-                if scale.tuesday else "Folga"
+            ter = format_day_schedule(
+                days_map.get("TUESDAY")
             )
 
-            qua = (
-                f"{scale.entry_1} {scale.exit_1} "
-                f"{scale.entry_2} {scale.exit_2}"
-                if scale.wednesday else "Folga"
+            qua = format_day_schedule(
+                days_map.get("WEDNESDAY")
             )
 
-            qui = (
-                f"{scale.entry_1} {scale.exit_1} "
-                f"{scale.entry_2} {scale.exit_2}"
-                if scale.thursday else "Folga"
+            qui = format_day_schedule(
+                days_map.get("THURSDAY")
             )
 
-            sex = (
-                f"{scale.entry_1} {scale.exit_1} "
-                f"{scale.entry_2} {scale.exit_2}"
-                if scale.friday else "Folga"
+            sex = format_day_schedule(
+                days_map.get("FRIDAY")
             )
 
-            sab = (
-                f"{scale.entry_1} {scale.exit_1} "
-                f"{scale.entry_2} {scale.exit_2}"
-                if scale.saturday else "Folga"
+            sab = format_day_schedule(
+                days_map.get("SATURDAY")
             )
 
-            dom = (
-                f"{scale.entry_1} {scale.exit_1} "
-                f"{scale.entry_2} {scale.exit_2}"
-                if scale.sunday else "Folga"
+            dom = format_day_schedule(
+                days_map.get("SUNDAY")
             )
 
         else:
@@ -535,9 +631,6 @@ def generate_pdf(
 
         total_carga = 0
 
-        carga_diaria = parse_schedule(
-            scale
-        )
 
         # =================================================
         # PROCESSAMENTO
@@ -549,6 +642,46 @@ def generate_pdf(
                 date,
                 "%Y-%m-%d"
             )
+
+            weekday_map = {
+
+                0: "MONDAY",
+                1: "TUESDAY",
+                2: "WEDNESDAY",
+                3: "THURSDAY",
+                4: "FRIDAY",
+                5: "SATURDAY",
+                6: "SUNDAY"
+
+            }
+
+            weekday_name = weekday_map[
+                current_date.weekday()
+            ]
+
+            day_scale = db.query(
+                ScaleDay
+            ).filter(
+                ScaleDay.scale_id == scale.id,
+                ScaleDay.day_name == weekday_name
+            ).first()
+
+            if day_scale:
+
+                carga_diaria = (
+                    parse_scale_day(
+                        day_scale
+                    )
+                )
+
+            else:
+
+                carga_diaria = (
+                    parse_schedule(
+                        scale
+                    )
+    )
+
 
             weekday = current_date.weekday()
 

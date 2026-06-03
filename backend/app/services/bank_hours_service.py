@@ -6,6 +6,7 @@ from app.database.database import SessionLocal
 from app.models.employee import Employee
 from app.models.time_record import TimeRecord
 from app.models.scale import Scale
+from app.models.scale_day import ScaleDay
 
 
 # =========================================
@@ -86,6 +87,68 @@ def calculate_scale_workload(scale):
 
     return total
 
+def calculate_day_workload(day):
+
+    total = 0
+
+    try:
+
+        if day.entry_1 and day.exit_1:
+
+            e1 = datetime.strptime(
+                day.entry_1,
+                "%H:%M:%S"
+            )
+
+            s1 = datetime.strptime(
+                day.exit_1,
+                "%H:%M:%S"
+            )
+
+            total += (s1 - e1).seconds
+
+    except:
+        pass
+
+    try:
+
+        if day.entry_2 and day.exit_2:
+
+            e2 = datetime.strptime(
+                day.entry_2,
+                "%H:%M:%S"
+            )
+
+            s2 = datetime.strptime(
+                day.exit_2,
+                "%H:%M:%S"
+            )
+
+            total += (s2 - e2).seconds
+
+    except:
+        pass
+
+    try:
+
+        if day.entry_3 and day.exit_3:
+
+            e3 = datetime.strptime(
+                day.entry_3,
+                "%H:%M:%S"
+            )
+
+            s3 = datetime.strptime(
+                day.exit_3,
+                "%H:%M:%S"
+            )
+
+            total += (s3 - e3).seconds
+
+    except:
+        pass
+
+    return total
 
 # =========================================
 # CALCULAR BANCO
@@ -118,11 +181,7 @@ def calculate_bank_hours():
 
                 continue
 
-            carga_diaria = (
-                calculate_scale_workload(
-                    scale
-                )
-            )
+            
 
             records = db.query(
                 TimeRecord
@@ -154,7 +213,7 @@ def calculate_bank_hours():
             total_extras = 0
             total_faltas = 0
 
-            for _, day_records in grouped.items():
+            for date_str, day_records in grouped.items():
 
                 ordered = sorted(
 
@@ -163,6 +222,39 @@ def calculate_bank_hours():
                     key=lambda x:
                     x.record_time
                 )
+
+
+                data_obj = datetime.strptime(
+                    date_str,
+                    "%Y-%m-%d"
+                )
+
+                weekday = data_obj.strftime(
+                    "%A"
+                ).upper()
+
+                day_scale = db.query(
+                    ScaleDay
+                ).filter(
+                    ScaleDay.scale_id == scale.id,
+                    ScaleDay.day_name == weekday
+                ).first()
+
+                if day_scale:
+
+                    carga_diaria = (
+                        calculate_day_workload(
+                            day_scale
+                        )
+                    )
+
+                else:
+
+                    carga_diaria = (
+                        calculate_scale_workload(
+                            scale
+                        )
+                    )
 
                 worked_seconds = 0
 
