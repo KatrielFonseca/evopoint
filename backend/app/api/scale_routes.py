@@ -10,6 +10,10 @@ from app.models.scale import Scale
 
 from app.schemas.scale_schema import ScaleCreate
 
+from app.models.scale_day import ScaleDay
+
+
+
 
 router = APIRouter()
 
@@ -167,6 +171,12 @@ def delete_scale(
             status_code=404,
             detail="Escala não encontrada."
         )
+
+    db.query(
+        ScaleDay
+    ).filter(
+        ScaleDay.scale_id == scale_id
+    ).delete()
 
     db.delete(scale)
 

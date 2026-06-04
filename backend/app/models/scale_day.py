@@ -16,9 +16,14 @@ class ScaleDay(Base):
         index=True
     )
 
+    from sqlalchemy import ForeignKey
+
     scale_id = Column(
         Integer,
-        ForeignKey("scales.id"),
+        ForeignKey(
+            "scales.id",
+            ondelete="CASCADE"
+        ),
         nullable=False
     )
 

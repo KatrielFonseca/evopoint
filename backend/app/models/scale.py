@@ -4,6 +4,7 @@ from sqlalchemy import String
 from sqlalchemy import Boolean
 
 from app.database.database import Base
+from sqlalchemy.orm import relationship
 
 
 class Scale(Base):

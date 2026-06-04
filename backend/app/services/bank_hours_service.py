@@ -154,7 +154,13 @@ def calculate_day_workload(day):
 # CALCULAR BANCO
 # =========================================
 
-def calculate_bank_hours():
+def calculate_bank_hours(
+
+    start_date=None,
+
+    end_date=None
+
+):
 
     db = SessionLocal()
 
@@ -183,7 +189,7 @@ def calculate_bank_hours():
 
             
 
-            records = db.query(
+            query = db.query(
                 TimeRecord
             ).filter(
 
@@ -191,7 +197,29 @@ def calculate_bank_hours():
                 ==
                 employee.registration
 
-            ).order_by(
+            )
+
+            if start_date:
+
+                query = query.filter(
+
+                    TimeRecord.record_time
+                    >=
+                    start_date
+
+                )
+
+            if end_date:
+
+                query = query.filter(
+
+                    TimeRecord.record_time
+                    <=
+                    end_date
+
+                )
+
+            records = query.order_by(
 
                 TimeRecord.record_time.asc()
 

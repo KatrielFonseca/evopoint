@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from fastapi import APIRouter
+from fastapi import Query
 
 from app.database.database import SessionLocal
 
@@ -15,9 +18,44 @@ router = APIRouter()
 # =========================================
 
 @router.get("/bank-hours")
-def get_bank_hours():
+def get_bank_hours(
 
-    return calculate_bank_hours()
+    start_date: str | None = Query(None),
+
+    end_date: str | None = Query(None)
+
+):
+
+    start = None
+    end = None
+
+    try:
+
+        if start_date:
+
+            start = datetime.strptime(
+                start_date,
+                "%Y-%m-%d"
+            )
+
+        if end_date:
+
+            end = datetime.strptime(
+                end_date,
+                "%Y-%m-%d"
+            )
+
+    except:
+
+        pass
+
+    return calculate_bank_hours(
+
+        start_date=start,
+
+        end_date=end
+
+    )
 
 
 # =========================================
