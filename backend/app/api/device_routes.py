@@ -3,13 +3,43 @@ from fastapi import Request
 
 from app.devices_evo.commands import EvoCommands
 
+from app.database.database import SessionLocal
+from app.models.settings import Settings
+
 router = APIRouter(
     prefix="/device",
     tags=["Device"]
 )
 
-EVO_IP = "192.168.88.9"
-EVO_PASSWORD = "1234"
+def get_evo():
+
+    db = SessionLocal()
+
+    try:
+
+        settings = db.query(
+            Settings
+        ).first()
+
+        if not settings:
+
+            raise Exception(
+                "Configurações EVO não encontradas."
+            )
+
+        return EvoCommands(
+
+            settings.evo_ip,
+
+            settings.evo_port,
+
+            settings.evo_password
+
+        )
+
+    finally:
+
+        db.close()
 
 
 # =====================================
@@ -37,10 +67,7 @@ async def receive_device_data(request: Request):
 @router.get("/status")
 def device_status():
 
-    evo = EvoCommands(
-        ip=EVO_IP,
-        password=EVO_PASSWORD
-    )
+    evo = get_evo()
 
     return evo.ping()
 
@@ -52,10 +79,7 @@ def device_status():
 @router.get("/info")
 def device_info():
 
-    evo = EvoCommands(
-        ip=EVO_IP,
-        password=EVO_PASSWORD
-    )
+    evo = get_evo()
 
     return evo.device_info()
 
@@ -67,10 +91,7 @@ def device_info():
 @router.get("/capacity")
 def device_capacity():
 
-    evo = EvoCommands(
-        ip=EVO_IP,
-        password=EVO_PASSWORD
-    )
+    evo = get_evo()
 
     return evo.get_capacity()
 
@@ -82,10 +103,7 @@ def device_capacity():
 @router.post("/sync-time")
 def sync_time():
 
-    evo = EvoCommands(
-        ip=EVO_IP,
-        password=EVO_PASSWORD
-    )
+    evo = get_evo()
 
     return evo.sync_time()
 
@@ -97,9 +115,6 @@ def sync_time():
 @router.post("/clear-logs")
 def clear_logs():
 
-    evo = EvoCommands(
-        ip=EVO_IP,
-        password=EVO_PASSWORD
-    )
+    evo = get_evo()
 
     return evo.clear_logs()

@@ -2,10 +2,20 @@ import requests
 
 class EvoClient:
 
-    def __init__(self, ip, password="1234"):
+    def __init__(
+        self,
+        ip,
+        port="80",
+        password="1234"
+    ):
+
         self.ip = ip
+        self.port = port
         self.password = password
-        self.base_url = f"http://{ip}/api"
+
+        self.base_url = (
+            f"http://{ip}:{port}/api"
+        )
 
     def send(self, payload):
 

@@ -5,6 +5,7 @@ from datetime import datetime
 from app.database.database import SessionLocal
 
 from app.models.time_record import TimeRecord
+from app.models.settings import Settings
 
 from app.devices_evo.commands import EvoCommands
 
@@ -45,7 +46,30 @@ def start_realtime_capture():
             # CONECTA NO EVO
             # =========================================
 
-            evo = EvoCommands("192.168.88.9")
+            settings = db.query(
+                Settings
+            ).first()
+
+            if not settings:
+
+                print("CONFIGURAÇÕES EVO NÃO ENCONTRADAS")
+
+                db.close()
+
+                time.sleep(5)
+
+                continue
+
+
+            evo = EvoCommands(
+
+                settings.evo_ip,
+
+                settings.evo_port,
+
+                settings.evo_password
+
+            )
 
             logs = evo.get_real_time_logs()
 

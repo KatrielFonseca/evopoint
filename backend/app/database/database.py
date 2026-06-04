@@ -2,13 +2,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 
-DATABASE_URL = "mysql+pymysql://root:123456@localhost:3306/evopoint"
+DATABASE_URL = "sqlite:///evopoint.db"
 
 engine = create_engine(
 
     DATABASE_URL,
 
-    pool_pre_ping=True
+    connect_args={
+        "check_same_thread": False
+    }
 )
 
 SessionLocal = sessionmaker(
