@@ -20,3 +20,11 @@ timesheet_*.pdf
 *.sqlite3
 
 node_modules/
+
+release/output/
+release/*.exe
+
+release/*.db
+backend/*.db
+
+release/*.ico

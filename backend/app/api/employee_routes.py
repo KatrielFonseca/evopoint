@@ -9,16 +9,10 @@ from app.schemas.employee_schema import EmployeeCreate
 
 from app.devices_evo.commands import EvoCommands
 
+from app.models.settings import Settings
+
 
 router = APIRouter()
-
-# =====================================================
-# EVO CONFIG
-# =====================================================
-
-EVO_IP = "192.168.88.9"
-
-EVO_PASSWORD = "1234"
 
 # =====================================================
 # LISTAR FUNCIONÁRIOS
@@ -212,11 +206,19 @@ def create_employee(employee: EmployeeCreate):
 
         try:
 
+            settings = db.query(
+                Settings
+            ).first()
+
+            if not settings:
+
+                raise Exception(
+                    "Configurações do EVO não encontradas"
+                )
+
             evo = EvoCommands(
-
-                ip=EVO_IP,
-
-                password=EVO_PASSWORD
+                ip=settings.evo_ip,
+                password=settings.evo_password
             )
 
             print("EVO CONECTADO")

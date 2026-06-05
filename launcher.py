@@ -10,12 +10,12 @@ else:
 
 backend_path = os.path.join(
     BASE_DIR,
-    "backend.exe"
+    "EVOPointAPI.exe"
 )
 
 frontend_path = os.path.join(
     BASE_DIR,
-    "frontend.exe"
+    "EVOPoint.exe"
 )
 
 subprocess.Popen(

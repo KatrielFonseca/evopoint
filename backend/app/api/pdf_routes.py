@@ -39,6 +39,7 @@ import tempfile
 import os
 
 from PySide6.QtWidgets import QFileDialog
+from datetime import timedelta
 
 router = APIRouter()
 
@@ -290,29 +291,27 @@ def generate_pdf(
 
         )
 
-        if start_date:
+        if start_date and end_date:
 
-            query = query.filter(
-
-                TimeRecord.record_time
-                >=
-                datetime.strptime(
-                    start_date,
-                    "%Y-%m-%d"
-                )
-
+            start_dt = datetime.strptime(
+                start_date,
+                "%Y-%m-%d"
             )
 
-        if end_date:
-
-            query = query.filter(
-
-                TimeRecord.record_time
-                <=
+            end_dt = (
                 datetime.strptime(
                     end_date,
                     "%Y-%m-%d"
                 )
+                +
+                timedelta(days=1)
+            )
+
+            query = query.filter(
+
+                TimeRecord.record_time >= start_dt,
+
+                TimeRecord.record_time < end_dt
 
             )
 
@@ -322,9 +321,70 @@ def generate_pdf(
 
         ).all()
 
+        if records:
+
+            if start_date:
+
+                period_start = datetime.strptime(
+                    start_date,
+                    "%Y-%m-%d"
+                )
+
+            else:
+
+                period_start = min(
+                    r.record_time
+                    for r in records
+                )
+
+            if end_date:
+
+                period_end = datetime.strptime(
+                    end_date,
+                    "%Y-%m-%d"
+                )
+
+            else:
+
+                period_end = max(
+                    r.record_time
+                    for r in records
+                )
+
+        else:
+
+            if not start_date or not end_date:
+
+                return {
+                    "success": False,
+                    "error": "Período não informado"
+                }
+
+            period_start = datetime.strptime(
+                start_date,
+                "%Y-%m-%d"
+            )
+
+            period_end = datetime.strptime(
+                end_date,
+                "%Y-%m-%d"
+            )
+
         grouped = defaultdict(
             list
         )
+
+        all_dates = []
+
+        current = period_start
+
+        while current <= period_end:
+
+            all_dates.append(
+                current.strftime("%Y-%m-%d")
+            )
+
+            current += timedelta(days=1)
 
         for record in records:
 
@@ -613,9 +673,6 @@ def generate_pdf(
 
             "NORMAIS",
             "FALTAS",
-            "EXTRAS",
-            "CARGA",
-            "EX0%",
             "EX50%",
             "EX100%",
             "BSALDO"
@@ -624,24 +681,30 @@ def generate_pdf(
 
         total_normais = 0
         total_faltas = 0
-
-        total_extras_0 = 0
         total_extras_50 = 0
         total_extras_100 = 0
-
         total_carga = 0
+
+        total_saldo = 0
 
 
         # =================================================
         # PROCESSAMENTO
         # =================================================
 
-        for date, day_records in grouped.items():
+        for date in all_dates:
+
+            day_records = grouped.get(
+                date,
+                []
+            )
 
             current_date = datetime.strptime(
                 date,
                 "%Y-%m-%d"
             )
+
+            today = datetime.now().date()
 
             weekday_map = {
 
@@ -659,12 +722,18 @@ def generate_pdf(
                 current_date.weekday()
             ]
 
-            day_scale = db.query(
-                ScaleDay
-            ).filter(
-                ScaleDay.scale_id == scale.id,
-                ScaleDay.day_name == weekday_name
-            ).first()
+            if scale:
+
+                day_scale = db.query(
+                    ScaleDay
+                ).filter(
+                    ScaleDay.scale_id == scale.id,
+                    ScaleDay.day_name == weekday_name
+                ).first()
+
+            else:
+
+                day_scale = None
 
             if day_scale:
 
@@ -773,7 +842,6 @@ def generate_pdf(
 
             faltas = 0
 
-            extras_0 = 0
             extras_50 = 0
             extras_100 = 0
 
@@ -784,6 +852,8 @@ def generate_pdf(
             if is_holiday:
 
                 extras_100 = worked_seconds
+
+                faltas = 0
 
             # ==========================================
             # DOMINGO FOLGA = 100%
@@ -819,7 +889,15 @@ def generate_pdf(
 
             else:
 
-                if worked_seconds < carga_diaria:
+                if current_date.date() > today:
+
+                    faltas = 0
+
+                elif current_date.date() == today:
+
+                    faltas = 0
+
+                elif worked_seconds < carga_diaria:
 
                     faltas = (
 
@@ -833,7 +911,7 @@ def generate_pdf(
 
                 elif worked_seconds > carga_diaria:
 
-                    extras_0 = (
+                    extras_50 = (
 
                         worked_seconds
 
@@ -843,22 +921,58 @@ def generate_pdf(
 
                     )
 
-            saldo = (
+            if is_holiday:
 
-                worked_seconds
+                normais_dia = 0
 
-                -
+            elif extras_50 > 0 or extras_100 > 0:
 
-                carga_diaria
+                normais_dia = 0
 
-            )
+            else:
 
-            total_normais += worked_seconds
+                normais_dia = min(
+                    worked_seconds,
+                    carga_diaria
+                )
+
+            if current_date.date() >= today:
+
+                saldo = 0
+
+            elif is_holiday:
+
+                saldo = 0
+
+            elif is_sunday and (
+                not scale
+                or
+                not scale.sunday
+            ):
+
+                saldo = 0
+
+            elif is_saturday and (
+                not scale
+                or
+                not scale.saturday
+            ):
+
+                saldo = 0
+
+            else:
+
+                saldo = worked_seconds - carga_diaria
+
+
+
+
+            total_normais += normais_dia
             total_faltas += faltas
-            total_extras_0 += extras_0
             total_extras_50 += extras_50
             total_extras_100 += extras_100
             total_carga += carga_diaria
+            total_saldo += saldo
 
             if saldo >= 0:
 
@@ -910,33 +1024,15 @@ def generate_pdf(
                 batidas[5]["time"] if batidas[5] else "",
 
                 seconds_to_hours(
-                    min(
-                        worked_seconds,
-                        carga_diaria
-                    )
+                    normais_dia
                 ),
 
                 seconds_to_hours(
                     faltas
                 ),
 
-                seconds_to_hours(
-                    extras_0
-                    +
-                    extras_50
-                    +
-                    extras_100
-                ),
 
-                seconds_to_hours(
-                    carga_diaria
-                ),
-
-                seconds_to_hours(
-                    extras_0
-                ),
-
-                seconds_to_hours(
+               seconds_to_hours(
                     extras_50
                 ),
 
@@ -951,15 +1047,8 @@ def generate_pdf(
         # TOTAL
         # =================================================
 
-        saldo_final = (
 
-            total_normais
-
-            -
-
-            total_carga
-
-        )
+        saldo_final = total_saldo
 
         if saldo_final >= 0:
 
@@ -1004,28 +1093,6 @@ def generate_pdf(
             ),
 
             seconds_to_hours(
-
-                total_extras_0
-
-                +
-
-                total_extras_50
-
-                +
-
-                total_extras_100
-
-            ),
-
-            seconds_to_hours(
-                total_carga
-            ),
-
-            seconds_to_hours(
-                total_extras_0
-            ),
-
-            seconds_to_hours(
                 total_extras_50
             ),
 
@@ -1054,14 +1121,11 @@ def generate_pdf(
 
                 34,34,
 
-                40,  # NORMAIS
-                40,  # FALTAS
-                40,  # EXTRAS
-                40,  # CARGA
-                40,  # EX0
-                40,  # EX50
-                40,  # EX100
-                42   # BSALDO
+                42,  # NORMAIS
+                42,  # FALTAS
+                42,  # EX50
+                42,  # EX100
+                45   # SALDO
 
             ]
         )
@@ -1252,29 +1316,16 @@ def generate_pdf(
 
         resumo = Table([[
             "NORMAIS",
-            seconds_to_hours(
-                total_normais
-            ),
+            seconds_to_hours(total_normais),
 
             "FALTAS",
-            seconds_to_hours(
-                total_faltas
-            ),
+            seconds_to_hours(total_faltas),
 
-            "EXTRAS",
-            seconds_to_hours(
+            "EX50%",
+            seconds_to_hours(total_extras_50),
 
-                total_extras_0
-
-                +
-
-                total_extras_50
-
-                +
-
-                total_extras_100
-
-            ),
+            "EX100%",
+            seconds_to_hours(total_extras_100),
 
             "SALDO",
             saldo_final_text
