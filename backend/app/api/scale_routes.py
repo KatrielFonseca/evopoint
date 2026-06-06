@@ -12,7 +12,9 @@ from app.schemas.scale_schema import ScaleCreate
 
 from app.models.scale_day import ScaleDay
 
-
+from app.utils.system_version import (
+    bump_system_version
+)
 
 
 router = APIRouter()
@@ -95,6 +97,8 @@ def create_scale(
 
     db.add(new_scale)
 
+    bump_system_version(db)
+
     db.commit()
 
     db.refresh(new_scale)
@@ -144,6 +148,8 @@ def update_scale(
     existing.entry_3 = scale.entry_3
     existing.exit_3 = scale.exit_3
 
+    bump_system_version(db)
+
     db.commit()
 
     db.refresh(existing)
@@ -179,6 +185,8 @@ def delete_scale(
     ).delete()
 
     db.delete(scale)
+
+    bump_system_version(db)
 
     db.commit()
 

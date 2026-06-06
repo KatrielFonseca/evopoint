@@ -110,3 +110,12 @@ class Settings(Base):
     server_port = Column(
         String(20)
     )
+    
+    # =====================================
+    # REALTIME
+    # =====================================
+
+    system_version = Column(
+        Integer,
+        default=1
+    )

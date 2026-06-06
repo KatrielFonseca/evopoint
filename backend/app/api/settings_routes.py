@@ -109,6 +109,36 @@ def get_settings():
 
 
 # =====================================
+# SYSTEM VERSION
+# =====================================
+
+@router.get("/version")
+def get_version():
+
+    db = SessionLocal()
+
+    try:
+
+        settings = db.query(
+            Settings
+        ).first()
+
+        if not settings:
+
+            return {
+                "version": 1
+            }
+
+        return {
+            "version":
+            settings.system_version or 1
+        }
+
+    finally:
+
+        db.close()
+
+# =====================================
 # SAVE SETTINGS
 # =====================================
 
@@ -217,7 +247,14 @@ def save_settings(
             data.server_port
         )
 
+        if not settings.system_version:
+
+            settings.system_version = 1
+
+        settings.system_version += 1
+
         db.commit()
+
 
         return {
 

@@ -10,6 +10,10 @@ from app.schemas.justification_schema import (
     JustificationCreate
 )
 
+from app.utils.system_version import (
+    bump_system_version
+)
+
 router = APIRouter(
     prefix="/justifications",
     tags=["Justifications"]
@@ -44,6 +48,17 @@ def get_justifications():
 
                 "end_date":
                 str(item.end_date),
+
+                "mode":
+                item.mode,
+
+                "start_time":
+                str(item.start_time)
+                if item.start_time else "",
+
+                "end_time":
+                str(item.end_time)
+                if item.end_time else "",
 
                 "justification_type":
                 item.justification_type,
@@ -89,6 +104,12 @@ def create_justification(
             end_date=
             data.end_date,
 
+            mode=data.mode,
+
+            start_time=data.start_time,
+
+            end_time=data.end_time,
+
             justification_type=
             data.justification_type,
 
@@ -101,6 +122,8 @@ def create_justification(
         )
 
         db.add(item)
+
+        bump_system_version(db)
 
         db.commit()
 
@@ -145,6 +168,8 @@ def delete_justification(
             }
 
         db.delete(item)
+
+        bump_system_version(db)
 
         db.commit()
 

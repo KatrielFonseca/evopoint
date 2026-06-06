@@ -14,6 +14,36 @@ from app.models.settings import Settings
 
 router = APIRouter()
 
+
+
+# =====================================================
+# REALTIME VERSION
+# =====================================================
+
+def bump_system_version(db):
+
+    settings = db.query(
+        Settings
+    ).first()
+
+    if not settings:
+
+        settings = Settings()
+
+        settings.system_version = 1
+
+        db.add(settings)
+
+    else:
+
+        settings.system_version = (
+            settings.system_version or 1
+        ) + 1
+
+
+
+
+
 # =====================================================
 # LISTAR FUNCIONÁRIOS
 # =====================================================
@@ -186,9 +216,13 @@ def create_employee(employee: EmployeeCreate):
 
         db.add(new_employee)
 
+        bump_system_version(db)
+
         db.commit()
 
         db.refresh(new_employee)
+
+
 
         print("MYSQL OK")
 
@@ -216,8 +250,14 @@ def create_employee(employee: EmployeeCreate):
                     "Configurações do EVO não encontradas"
                 )
 
+            settings = db.query(
+                Settings
+            ).first()
+
             evo = EvoCommands(
+
                 ip=settings.evo_ip,
+
                 password=settings.evo_password
             )
 
@@ -345,6 +385,8 @@ def update_employee(
 
         employee.schedule = employee_data.schedule
 
+        bump_system_version(db)
+
         db.commit()
 
         print("FUNCIONÁRIO ATUALIZADO")
@@ -408,11 +450,15 @@ def delete_employee(employee_id: int):
 
         try:
 
+            settings = db.query(
+                Settings
+            ).first()
+
             evo = EvoCommands(
 
-                ip=EVO_IP,
+                ip=settings.evo_ip,
 
-                password=EVO_PASSWORD
+                password=settings.evo_password
             )
 
             response = evo.delete_user(
@@ -435,6 +481,8 @@ def delete_employee(employee_id: int):
         # =====================================
 
         db.delete(employee)
+
+        bump_system_version(db)
 
         db.commit()
 

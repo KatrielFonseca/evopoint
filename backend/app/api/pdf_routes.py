@@ -34,6 +34,7 @@ from app.models.employee import Employee
 from app.models.time_record import TimeRecord
 from app.models.scale import Scale
 from app.models.holiday import Holiday
+from app.models.justification import Justification
 from zipfile import ZipFile
 import tempfile
 import os
@@ -411,6 +412,17 @@ def generate_pdf(
             ).all()
 
         }
+
+
+        # =================================================
+        # JUSTIFICATIVAS
+        # =================================================
+
+        justifications = db.query(
+            Justification
+        ).filter(
+            Justification.employee_id == employee.id
+        ).all()
 
         # =================================================
         # PDF
@@ -800,6 +812,18 @@ def generate_pdf(
 
             worked_seconds = 0
 
+            justification_day = False
+
+            justification_hours = 0
+
+            for j in justifications:
+
+                if str(j.start_date) <= date <= str(j.end_date):
+
+                    if j.mode == "day":
+
+                        justification_day = True
+
             pares = [
 
                 (0, 1),
@@ -845,9 +869,19 @@ def generate_pdf(
             extras_50 = 0
             extras_100 = 0
 
+            if justification_day:
+
+                faltas = 0
+
+                extras_50 = 0
+
+                extras_100 = 0
+
+
             # ==========================================
             # FERIADO = 100%
             # ==========================================
+
 
             if is_holiday:
 
@@ -921,7 +955,26 @@ def generate_pdf(
 
                     )
 
-            if is_holiday:
+            if justification_day:
+
+                normais_dia = carga_diaria
+
+
+            just_text = ""
+
+            if justification_day:
+
+                for j in justifications:
+
+                    if str(j.start_date) <= date <= str(j.end_date):
+
+                        just_text = (
+                            j.justification_type.upper()
+                        )
+
+                        break
+
+            elif is_holiday:
 
                 normais_dia = 0
 
@@ -937,6 +990,10 @@ def generate_pdf(
                 )
 
             if current_date.date() >= today:
+
+                saldo = 0
+
+            elif justification_day:
 
                 saldo = 0
 
@@ -1014,14 +1071,29 @@ def generate_pdf(
 
                 data_formatada,
 
-                batidas[0]["time"] if batidas[0] else "",
-                batidas[1]["time"] if batidas[1] else "",
+                just_text if justification_day else (
+                    batidas[0]["time"] if batidas[0] else ""
+                ),
 
-                batidas[2]["time"] if batidas[2] else "",
-                batidas[3]["time"] if batidas[3] else "",
+                just_text if justification_day else (
+                    batidas[1]["time"] if batidas[1] else ""
+                ),
 
-                batidas[4]["time"] if batidas[4] else "",
-                batidas[5]["time"] if batidas[5] else "",
+                just_text if justification_day else (
+                    batidas[2]["time"] if batidas[2] else ""
+                ),
+
+                just_text if justification_day else (
+                    batidas[3]["time"] if batidas[3] else ""
+                ),
+
+                just_text if justification_day else (
+                    batidas[4]["time"] if batidas[4] else ""
+                ),
+
+                just_text if justification_day else (
+                    batidas[5]["time"] if batidas[5] else ""
+                ),
 
                 seconds_to_hours(
                     normais_dia

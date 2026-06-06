@@ -159,6 +159,31 @@ class JustificationsPage(QWidget):
             "Outro"
 
         ])
+        
+        self.mode_input = QComboBox()
+
+        self.mode_input.addItems([
+
+            "Por Dia",
+
+            "Por Hora"
+
+        ])
+
+
+        self.mode_input.currentTextChanged.connect(
+            self.toggle_hour_fields
+        )
+
+
+
+        self.mode_input.setMinimumHeight(
+            50
+        )
+
+        self.mode_input.setStyleSheet(
+            self.combo_style()
+        )
 
         self.type_input.setMinimumHeight(
             50
@@ -174,6 +199,14 @@ class JustificationsPage(QWidget):
 
         self.end_date_input = self.create_input(
             "Data Final (AAAA-MM-DD)"
+        )
+
+        self.start_time_input = self.create_input(
+            "Hora Inicial (08:00)"
+        )
+
+        self.end_time_input = self.create_input(
+            "Hora Final (12:00)"
         )
 
         self.description_input = self.create_input(
@@ -193,6 +226,12 @@ class JustificationsPage(QWidget):
         )
 
         form_layout.addWidget(
+            self.mode_input,
+            0,
+            2
+        )
+
+        form_layout.addWidget(
             self.start_date_input,
             1,
             0
@@ -202,6 +241,18 @@ class JustificationsPage(QWidget):
             self.end_date_input,
             1,
             1
+        )
+
+        form_layout.addWidget(
+            self.start_time_input,
+            1,
+            2
+        )
+
+        form_layout.addWidget(
+            self.end_time_input,
+            1,
+            3
         )
 
         form_layout.addWidget(
@@ -235,6 +286,11 @@ class JustificationsPage(QWidget):
             1,
             2
         )
+
+        main_layout.addWidget(
+            form_card
+        )
+
 
         main_layout.addWidget(
             form_card
@@ -316,6 +372,9 @@ class JustificationsPage(QWidget):
         main_layout.addWidget(
             table_card
         )
+        
+        self.toggle_hour_fields()
+
 
     # =========================================
     # INPUT
@@ -445,27 +504,60 @@ class JustificationsPage(QWidget):
 
                 JUSTIFICATIONS_URL,
 
-                json={
+               json={
 
-                    "employee_id":
-                    self.employee_input.currentData(),
+                "employee_id":
+                self.employee_input.currentData(),
 
-                    "start_date":
-                    self.start_date_input.text(),
+                "start_date":
+                self.start_date_input.text(),
 
-                    "end_date":
-                    self.end_date_input.text(),
+                "end_date":
+                self.end_date_input.text(),
 
-                    "justification_type":
-                    self.type_input.currentText(),
+                "justification_type":
+                self.type_input.currentText(),
 
-                    "description":
-                    self.description_input.text(),
+                "description":
+                self.description_input.text(),
 
-                    "attachment":
-                    ""
+                "attachment":
+                "",
 
-                }
+                "mode":
+
+                    "hour"
+
+                    if self.mode_input.currentText()
+                    == "Por Hora"
+
+                    else
+
+                    "day",
+
+                "start_time":
+
+                    self.start_time_input.text()
+
+                    if self.mode_input.currentText()
+                    == "Por Hora"
+
+                    else
+
+                    None,
+
+                "end_time":
+
+                    self.end_time_input.text()
+
+                    if self.mode_input.currentText()
+                    == "Por Hora"
+
+                    else
+
+                    None
+
+            }
 
             )
 
@@ -612,3 +704,18 @@ class JustificationsPage(QWidget):
         )
 
         self.load_justifications()
+    
+    def toggle_hour_fields(self):
+
+        show = (
+            self.mode_input.currentText()
+            == "Por Hora"
+        )
+
+        self.start_time_input.setVisible(
+            show
+        )
+
+        self.end_time_input.setVisible(
+            show
+        )

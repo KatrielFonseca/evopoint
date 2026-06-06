@@ -23,6 +23,9 @@ from pages.reports_page import ReportsPage
 from pages.devices_page import DevicesPage
 from pages.settings_page import SettingsPage
 from pages.justifications_page import JustificationsPage
+from PySide6.QtCore import QTimer
+
+import requests
 
 # =========================================
 # SIDEBAR BUTTON
@@ -592,6 +595,20 @@ escalas, registros em tempo real e integração EVO.
         self.justifications_page = JustificationsPage()
 
         # =====================================
+        # REALTIME VERSION
+        # =====================================
+
+        self.current_version = 0
+
+        self.version_timer = QTimer()
+
+        self.version_timer.timeout.connect(
+            self.check_system_version
+        )
+
+        self.version_timer.start(3000)
+
+        # =====================================
         # ADD STACK
         # =====================================
 
@@ -686,7 +703,106 @@ escalas, registros em tempo real e integração EVO.
         main_layout.addWidget(
             content
         )
+    # =========================================
+    # REALTIME VERSION
+    # =========================================
 
+    def check_system_version(self):
+
+        try:
+
+            response = requests.get(
+                "http://127.0.0.1:8000/settings/version",
+                timeout=2
+            )
+
+            version = response.json().get(
+                "version",
+                1
+            )
+
+            if self.current_version == 0:
+
+                self.current_version = version
+
+                return
+
+            if version != self.current_version:
+
+                self.current_version = version
+
+                self.refresh_pages()
+
+        except Exception as e:
+
+            print(
+                "REALTIME ERROR:",
+                str(e)
+            )
+
+
+    def refresh_pages(self):
+
+        print(
+            "ATUALIZANDO TELAS..."
+        )
+
+        try:
+
+            if hasattr(
+                self.employees_page,
+                "load_employees"
+            ):
+
+                self.employees_page.load_employees()
+
+        except Exception as e:
+
+            print(e)
+
+        try:
+
+            if hasattr(
+                self.records_page,
+                "load_records"
+            ):
+
+                self.records_page.load_records()
+
+        except Exception as e:
+
+            print(e)
+
+        try:
+
+            if hasattr(
+                self.scales_page,
+                "load_scales"
+            ):
+
+                self.scales_page.load_scales()
+
+        except Exception as e:
+
+            print(e)
+
+        try:
+
+            try:
+
+                self.employees_page.load_company()
+
+                self.employees_page.load_scales()
+
+                self.employees_page.load_employees()
+
+            except Exception as e:
+
+                print(e)
+
+        except Exception as e:
+
+            print(e)
     # =========================================
     # PLACEHOLDER
     # =========================================

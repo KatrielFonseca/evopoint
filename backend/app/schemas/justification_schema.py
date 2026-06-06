@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from datetime import time
+
 from datetime import date
 
 
@@ -16,3 +18,9 @@ class JustificationCreate(BaseModel):
     description: str | None = None
 
     attachment: str | None = None
+
+    mode: str
+
+    start_time: time | None = None
+
+    end_time: time | None = None

@@ -3,6 +3,7 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Date
 from sqlalchemy import ForeignKey
+from sqlalchemy import Time
 
 from app.database.database import Base
 
@@ -30,6 +31,20 @@ class Justification(Base):
         Date
     )
 
+    mode = Column(
+        String(20)
+    )
+
+    start_time = Column(
+        Time,
+        nullable=True
+    )
+
+    end_time = Column(
+        Time,
+        nullable=True
+    )
+
     justification_type = Column(
         String(100)
     )
@@ -41,3 +56,6 @@ class Justification(Base):
     attachment = Column(
         String(500)
     )
+
+   
+

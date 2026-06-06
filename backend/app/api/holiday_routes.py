@@ -78,6 +78,8 @@ def create_holiday(
             holiday
         )
 
+        bump_system_version(db)
+
         db.commit()
 
         return {
@@ -123,6 +125,8 @@ def delete_holiday(
         db.delete(
             holiday
         )
+
+        bump_system_version(db)
 
         db.commit()
 
