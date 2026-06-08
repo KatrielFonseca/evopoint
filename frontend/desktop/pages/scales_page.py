@@ -1100,7 +1100,7 @@ class ScalesPage(QWidget):
 
         QMessageBox.information(
             self,
-            "EVOPoint",
+            "AVAPoint",
             "Use o botão 📅 da escala desejada."
         )
     

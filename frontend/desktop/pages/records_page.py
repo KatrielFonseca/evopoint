@@ -23,8 +23,11 @@ from PySide6.QtWidgets import (
     QComboBox,
     QHeaderView,
     QAbstractItemView,
-    QDateEdit
-)
+    QDateEdit,
+    QDialog,
+    QFormLayout,
+    QLineEdit
+    )
 
 API_URL = "http://127.0.0.1:8000"
 
@@ -173,6 +176,38 @@ class RecordsPage(QWidget):
         header_layout.addStretch()
 
         header_layout.addWidget(refresh_button)
+
+        add_punch_button = QPushButton(
+            "Adicionar Batida"
+        )
+
+        add_punch_button.clicked.connect(
+            self.add_manual_punch
+        )
+
+        add_punch_button.setMinimumHeight(48)
+
+        add_punch_button.setStyleSheet("""
+
+            QPushButton {
+
+                background: #1565C0;
+                color: white;
+
+                border: none;
+                border-radius: 14px;
+
+                padding: 14px 22px;
+
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+        """)
+
+        header_layout.addWidget(
+            add_punch_button
+        )
 
         main_layout.addLayout(header_layout)
 
@@ -1253,7 +1288,7 @@ class RecordsPage(QWidget):
 
                 QMessageBox.warning(
                     self,
-                    "EVOPoint",
+                    "AVAPoint",
                     "Nenhum funcionário encontrado."
                 )
 
@@ -1332,7 +1367,7 @@ class RecordsPage(QWidget):
 
                 self,
 
-                "EVOPoint",
+                "AVAPoint",
 
                 f"{total} PDFs gerados em:\n\n{pasta}"
 
@@ -1366,7 +1401,7 @@ class RecordsPage(QWidget):
 
             self,
 
-            "EVOPoint",
+            "AVAPoint",
 
             "Backend de exclusão já está pronto.\nAgora vamos ligar o botão à API."
 
@@ -1471,3 +1506,100 @@ class RecordsPage(QWidget):
                 self.table,
                 event
             )
+
+    def add_manual_punch(self):
+
+        dialog = QDialog(self)
+
+        dialog.setWindowTitle(
+            "Adicionar Batida"
+        )
+
+        layout = QFormLayout(dialog)
+
+        date_edit = QDateEdit()
+
+        date_edit.setCalendarPopup(True)
+
+        date_edit.setDate(
+            self.start_date.date()
+        )
+
+        time_edit = QLineEdit()
+
+        time_edit.setPlaceholderText(
+            "08:00:00"
+        )
+
+        layout.addRow(
+            "Data:",
+            date_edit
+        )
+
+        layout.addRow(
+            "Hora:",
+            time_edit
+        )
+
+        save_button = QPushButton(
+            "Salvar"
+        )
+
+        layout.addWidget(
+            save_button
+        )
+
+        def salvar():
+
+            registration = (
+                self.employee_combo.currentData()
+            )
+
+            employee_name = (
+                self.employee_combo.currentText()
+            )
+
+            response = requests.post(
+
+                f"{API_URL}/time-records/manual",
+
+                params={
+
+                    "registration":
+                        registration,
+
+                    "employee_name":
+                        employee_name,
+
+                    "date":
+                        date_edit.date().toString(
+                            "yyyy-MM-dd"
+                        ),
+
+                    "time":
+                        time_edit.text(),
+
+                    "inout":
+                        0
+                }
+            )
+
+            if response.status_code == 200:
+
+                dialog.accept()
+
+                self.load_records()
+
+            else:
+
+                QMessageBox.warning(
+                    self,
+                    "Erro",
+                    response.text
+                )
+
+        save_button.clicked.connect(
+            salvar
+        )
+
+        dialog.exec()

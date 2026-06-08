@@ -27,6 +27,9 @@ from PySide6.QtCore import QTimer
 
 import requests
 
+from PySide6.QtGui import QPixmap
+
+
 # =========================================
 # SIDEBAR BUTTON
 # =========================================
@@ -88,7 +91,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle(
-            "EVOPoint"
+            "AVAPoint"
         )
 
         self.resize(1500, 920)
@@ -188,21 +191,24 @@ class MainWindow(QMainWindow):
         # LOGO
         # =====================================
 
-        logo = QLabel("EVOPoint")
+        logo = QLabel()
 
-        logo.setStyleSheet("""
+        pixmap = QPixmap(
+            "assets/avapoint.png"
+        )
 
-            color: white;
+        logo.setPixmap(
+            pixmap.scaled(
+                220,
+                220,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+        )
 
-            font-size: 38px;
-
-            font-weight: 800;
-
-            margin-bottom: 28px;
-
-            background: transparent;
-
-        """)
+        logo.setAlignment(
+            Qt.AlignCenter
+        )
 
         sidebar_layout.addWidget(
             logo
@@ -307,7 +313,7 @@ class MainWindow(QMainWindow):
         # =====================================
 
         version = QLabel(
-            "EVOPoint v1.0"
+            "AVAPoint v2.0"
         )
 
         version.setStyleSheet("""
@@ -390,7 +396,7 @@ class MainWindow(QMainWindow):
 
         title_container = QVBoxLayout()
 
-        title = QLabel("EVOPoint")
+        title = QLabel("AVAPoint")
 
         title.setStyleSheet("""
 
@@ -523,7 +529,7 @@ class MainWindow(QMainWindow):
         )
 
         dashboard_title = QLabel(
-            "Bem-vindo ao EVOPoint"
+            "Bem-vindo ao AVAPoint"
         )
 
         dashboard_title.setStyleSheet("""

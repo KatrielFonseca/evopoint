@@ -1,4 +1,4 @@
-#define MyAppName "EVOPoint"
+#define MyAppName "AVAPoint"
 #define MyAppVersion "1.0"
 #define MyAppPublisher "Katriel Fonseca"
 

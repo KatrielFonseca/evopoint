@@ -8,6 +8,8 @@ from app.models.time_record import TimeRecord
 from app.models.scale import Scale
 from app.models.scale_day import ScaleDay
 
+from app.models.justification import Justification
+
 
 # =========================================
 # HELPERS
@@ -243,6 +245,54 @@ def calculate_bank_hours(
 
             for date_str, day_records in grouped.items():
 
+                justification_day = False
+
+                justification_hours = 0
+
+                justifications = db.query(
+                    Justification
+                ).filter(
+                    Justification.employee_id == employee.id
+                ).all()
+
+                for j in justifications:
+
+                    if (
+                        str(j.start_date)
+                        <=
+                        date_str
+                        <=
+                        str(j.end_date)
+                    ):
+
+                        if j.mode == "day":
+
+                            justification_day = True
+
+                        elif (
+                            j.mode == "hour"
+                            and
+                            j.start_time
+                            and
+                            j.end_time
+                        ):
+
+                            inicio = datetime.combine(
+                                datetime.today(),
+                                j.start_time
+                            )
+
+                            fim = datetime.combine(
+                                datetime.today(),
+                                j.end_time
+                            )
+
+                            justification_hours += int(
+                                (
+                                    fim - inicio
+                                ).total_seconds()
+                            )
+
                 ordered = sorted(
 
                     day_records,
@@ -325,14 +375,20 @@ def calculate_bank_hours(
                             seconds
                         )
 
-                if worked_seconds < carga_diaria:
+                worked_seconds += justification_hours
+
+                if justification_day:
+
+                    total_normais += (
+                        carga_diaria
+                    )
+
+                elif worked_seconds < carga_diaria:
 
                     total_faltas += (
-
                         carga_diaria
                         -
                         worked_seconds
-
                     )
 
                     total_normais += (

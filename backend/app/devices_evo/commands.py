@@ -314,3 +314,42 @@ class EvoCommands(EvoClient):
                 "online": False,
                 "error": str(e)
             }
+    
+
+    def test_command(self, cmd):
+
+        response = self.send({
+
+            "cmd": cmd
+
+        })
+
+        print("=================================")
+        print("TEST COMMAND:", cmd)
+        print("=================================")
+        print(response)
+
+        return response
+
+    
+    def get_logs(self, from_index=0):
+
+        response = self.send({
+
+            "cmd": "getlog",
+
+            "from": from_index
+
+        })
+
+        return response
+
+    def get_logs(self, from_index=0):
+
+        return self.send({
+
+            "cmd": "getlog",
+
+            "from": from_index
+
+        })

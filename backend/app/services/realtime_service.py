@@ -14,11 +14,167 @@ from app.devices_evo.commands import EvoCommands
 # REALTIME SERVICE
 # =====================================================
 
+
+
+# =========================================
+# SINCRONIZA HISTÓRICO
+# =========================================
+
+def sync_historical_logs():
+
+    db = SessionLocal()
+
+    try:
+
+        settings = db.query(
+            Settings
+        ).first()
+
+        if not settings:
+            return
+
+        evo = EvoCommands(
+
+            settings.evo_ip,
+
+            settings.evo_port,
+
+            settings.evo_password
+
+        )
+
+        from_index = 0
+
+        while True:
+
+            logs = evo.get_logs(
+                from_index
+            )
+
+            records = logs.get(
+                "record",
+                []
+            )
+
+            if not records:
+                break
+
+            print(
+                f"IMPORTANDO {len(records)} LOGS"
+            )
+
+            for log in records:
+
+                try:
+
+                    enrollid = str(
+                        log.get(
+                            "enrollid",
+                            ""
+                        )
+                    ).strip()
+
+                    if (
+                        not enrollid
+                        or
+                        enrollid == "99999999"
+                    ):
+                        continue
+
+                    log_time_raw = str(
+                        log.get(
+                            "time",
+                            ""
+                        )
+                    ).strip()
+
+                    if not log_time_raw:
+                        continue
+
+                    log_time = datetime.strptime(
+                        log_time_raw,
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+
+                    existing = db.query(
+                        TimeRecord
+                    ).filter(
+
+                        TimeRecord.employee_registration
+                        == enrollid,
+
+                        TimeRecord.record_time
+                        == log_time
+
+                    ).first()
+
+                    if existing:
+                        continue
+
+                    novo = TimeRecord(
+
+                        employee_registration=
+                        enrollid,
+
+                        employee_name=
+                        log.get(
+                            "name",
+                            ""
+                        ),
+
+                        record_time=
+                        log_time,
+
+                        verification_mode=
+                        "Facial",
+
+                        device_event=
+                        str(
+                            log.get(
+                                "event",
+                                ""
+                            )
+                        ),
+
+                        inout=0
+
+                    )
+
+                    db.add(novo)
+
+                except Exception as e:
+
+                    print(
+                        "ERRO:",
+                        e
+                    )
+
+            db.commit()
+
+            from_index += 50
+
+        print(
+            "HISTÓRICO IMPORTADO"
+        )
+
+    finally:
+
+        db.close()
+
+
+# =========================================
+# REALTIME SERVICE
+# =========================================
+
+
 def start_realtime_capture():
 
     print("================================")
     print("REALTIME SERVICE INICIADO")
     print("================================")
+
+
+    sync_historical_logs()
 
     # =============================================
     # IGNORA LOGS ANTERIORES AO START DO SERVIÇO
@@ -70,6 +226,7 @@ def start_realtime_capture():
                 settings.evo_password
 
             )
+
 
             logs = evo.get_real_time_logs()
 

@@ -814,7 +814,7 @@ def generate_pdf(
 
             justification_day = False
 
-            justification_hours = 0
+            hour_justification = None
 
             for j in justifications:
 
@@ -823,6 +823,10 @@ def generate_pdf(
                     if j.mode == "day":
 
                         justification_day = True
+
+                    elif j.mode == "hour":
+
+                        hour_justification = j
 
             pares = [
 
@@ -960,6 +964,48 @@ def generate_pdf(
                 normais_dia = carga_diaria
 
 
+
+            hour_slots = [False, False, False, False, False, False]
+
+            if hour_justification:
+
+                inicio = hour_justification.start_time
+
+                fim = hour_justification.end_time
+
+                pares_horarios = [
+
+                    day_scale.entry_1 if day_scale else None,
+                    day_scale.exit_1 if day_scale else None,
+
+                    day_scale.entry_2 if day_scale else None,
+                    day_scale.exit_2 if day_scale else None,
+
+                    day_scale.entry_3 if day_scale else None,
+                    day_scale.exit_3 if day_scale else None
+
+                ]
+
+                for idx, horario in enumerate(pares_horarios):
+
+                    if horario:
+
+                        try:
+
+                            hora = datetime.strptime(
+                                horario[:5],
+                                "%H:%M"
+                            ).time()
+
+                            if inicio <= hora <= fim:
+
+                                hour_slots[idx] = True
+
+                        except:
+                            pass
+
+
+
             just_text = ""
 
             if justification_day:
@@ -995,20 +1041,17 @@ def generate_pdf(
                         )
                         break
 
+            if justification_day:
+
+                normais_dia = carga_diaria
+
             elif is_holiday:
-
-                normais_dia = 0
-
-            elif extras_50 > 0 or extras_100 > 0:
 
                 normais_dia = 0
 
             else:
 
-                normais_dia = min(
-                    worked_seconds,
-                    carga_diaria
-                )
+                normais_dia = carga_diaria
 
             if current_date.date() >= today:
 
@@ -1093,27 +1136,33 @@ def generate_pdf(
                 data_formatada,
 
                 just_text if justification_day else (
-                    batidas[0]["time"] if batidas[0] else ""
+                    "ATEST" if hour_slots[0]
+                    else (batidas[0]["time"] if batidas[0] else "")
                 ),
 
                 just_text if justification_day else (
-                    batidas[1]["time"] if batidas[1] else ""
+                    "ATEST" if hour_slots[1]
+                    else (batidas[1]["time"] if batidas[1] else "")
                 ),
 
                 just_text if justification_day else (
-                    batidas[2]["time"] if batidas[2] else ""
+                    "ATEST" if hour_slots[2]
+                    else (batidas[2]["time"] if batidas[2] else "")
                 ),
 
                 just_text if justification_day else (
-                    batidas[3]["time"] if batidas[3] else ""
+                    "ATEST" if hour_slots[3]
+                    else (batidas[3]["time"] if batidas[3] else "")
                 ),
 
                 just_text if justification_day else (
-                    batidas[4]["time"] if batidas[4] else ""
+                    "ATEST" if hour_slots[4]
+                    else (batidas[4]["time"] if batidas[4] else "")
                 ),
 
                 just_text if justification_day else (
-                    batidas[5]["time"] if batidas[5] else ""
+                    "ATEST" if hour_slots[5]
+                    else (batidas[5]["time"] if batidas[5] else "")
                 ),
 
                 seconds_to_hours(
