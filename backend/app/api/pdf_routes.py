@@ -968,10 +968,31 @@ def generate_pdf(
 
                     if str(j.start_date) <= date <= str(j.end_date):
 
-                        just_text = (
-                            j.justification_type.upper()
-                        )
+                        mapping = {
 
+                            "Atestado Médico": "ATEST",
+                            "Atestado": "ATEST",
+
+                            "Folga": "FOLGA",
+                            "Folga Compensada": "FOLGA",
+
+                            "Férias": "FERIA",
+
+                            "Abono": "ABONO",
+
+                            "Licença": "LICEN",
+
+                            "Licença Médica": "LICMD"
+
+                        }
+
+                        just_text = mapping.get(
+
+                            j.justification_type,
+
+                            j.justification_type.upper()[:5]
+
+                        )
                         break
 
             elif is_holiday:

@@ -3,15 +3,18 @@
 #define MyAppPublisher "Katriel Fonseca"
 
 [Setup]
+
 AppId={{B8F1A6C2-8D55-4F12-9999-EVOPOINTV2}}
+
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 
-DefaultDirName={sd}\EVOPoint
+DefaultDirName=C:\EVOPoint
 DefaultGroupName=EVOPoint
 
-UsePreviousAppDir=no
+UsePreviousAppDir=yes
+
 DisableDirPage=no
 
 OutputDir=output
@@ -28,13 +31,25 @@ UninstallDisplayIcon={app}\Launcher.exe
 
 [Files]
 
-Source: "Launcher.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "EVOPoint.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "EVOPointAPI.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Launcher.exe"; \
+DestDir: "{app}"; \
+Flags: ignoreversion
 
-Source: "evopoint.db"; DestDir: "{app}"; Flags: ignoreversion
+Source: "EVOPoint.exe"; \
+DestDir: "{app}"; \
+Flags: ignoreversion
 
-Source: "evopoint.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "EVOPointAPI.exe"; \
+DestDir: "{app}"; \
+Flags: ignoreversion
+
+Source: "evopoint.ico"; \
+DestDir: "{app}"; \
+Flags: ignoreversion
+
+Source: "evopoint.db"; \
+DestDir: "{app}"; \
+Flags: onlyifdoesntexist
 
 [Icons]
 
