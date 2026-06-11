@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database.database import SessionLocal
 from app.models.time_record import TimeRecord
 from app.devices_evo.commands import EvoCommands
+from app.models.deleted_log import DeletedLog
 
 router = APIRouter()
 
@@ -492,6 +493,17 @@ def delete_record(record_id: int):
                 "message": "Registro não encontrado"
             }
 
+        deleted = DeletedLog(
+
+            employee_registration=
+                record.employee_registration,
+
+            record_time=
+                record.record_time
+        )
+
+        db.add(deleted)
+
         db.delete(record)
 
         db.commit()
@@ -518,3 +530,18 @@ def delete_record(record_id: int):
     finally:
 
         db.close()
+
+    deleted = DeletedLog(
+
+        employee_registration=
+            record.employee_registration,
+
+        record_time=
+            record.record_time
+    )
+
+    db.add(deleted)
+
+    db.delete(record)
+
+    db.commit()

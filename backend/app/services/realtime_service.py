@@ -13,7 +13,7 @@ from app.devices_evo.commands import EvoCommands
 # =====================================================
 # REALTIME SERVICE
 # =====================================================
-
+from app.models.deleted_log import DeletedLog
 
 
 # =========================================
@@ -43,21 +43,24 @@ def sync_historical_logs():
 
         )
 
-        from_index = 0
+        from_index = settings.last_log_index or 0
 
-        while True:
+        print("================================")
+        print("ULTIMO INDEX SALVO:")
+        print(settings.last_log_index)
+        print("FROM INDEX:")
+        print(from_index)
+        print("================================")
 
-            logs = evo.get_logs(
-                from_index
-            )
+        logs = evo.get_logs(from_index)
 
-            records = logs.get(
-                "record",
-                []
-            )
+        records = logs.get("record", [])
 
-            if not records:
-                break
+        if not records:
+
+            print("SEM LOGS HISTÓRICOS")
+
+            return
 
             print(
                 f"IMPORTANDO {len(records)} LOGS"
@@ -95,6 +98,21 @@ def sync_historical_logs():
                         log_time_raw,
                         "%Y-%m-%d %H:%M:%S"
                     )
+
+                    deleted = db.query(
+                        DeletedLog
+                    ).filter(
+
+                        DeletedLog.employee_registration
+                        == enrollid,
+
+                        DeletedLog.record_time
+                        == log_time
+
+                    ).first()
+
+                    if deleted:
+                        continue
 
                     existing = db.query(
                         TimeRecord
@@ -151,7 +169,8 @@ def sync_historical_logs():
 
             db.commit()
 
-            from_index += 50
+            print("INDEX SALVO:")
+            print(from_index)
 
         print(
             "HISTÓRICO IMPORTADO"

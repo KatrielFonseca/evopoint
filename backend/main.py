@@ -20,6 +20,7 @@ from app.models.employee import Employee
 from app.models.time_record import TimeRecord
 from app.models.scale import Scale
 from app.models.scale_day import ScaleDay
+from app.models.deleted_log import DeletedLog
 
 
 # =========================================
@@ -110,6 +111,70 @@ app = FastAPI(
 
 Base.metadata.create_all(bind=engine)
 
+from sqlalchemy import text
+
+def run_migrations():
+
+    with engine.connect() as conn:
+
+        columns = conn.execute(
+            text("PRAGMA table_info(settings)")
+        ).fetchall()
+
+        column_names = [
+            c[1]
+            for c in columns
+        ]
+
+        # ====================================
+        # last_log_index
+        # ====================================
+
+        if "last_log_index" not in column_names:
+
+            print(
+                "CRIANDO COLUNA last_log_index..."
+            )
+
+            conn.execute(
+                text(
+                    """
+                    ALTER TABLE settings
+                    ADD COLUMN last_log_index
+                    INTEGER DEFAULT 0
+                    """
+                )
+            )
+
+            conn.commit()
+
+        # ====================================
+        # system_version
+        # ====================================
+
+        if "system_version" not in column_names:
+
+            print(
+                "CRIANDO COLUNA system_version..."
+            )
+
+            conn.execute(
+                text(
+                    """
+                    ALTER TABLE settings
+                    ADD COLUMN system_version
+                    VARCHAR(50)
+                    DEFAULT '2.0'
+                    """
+                )
+            )
+
+            conn.commit()
+
+            print(
+                "COLUNA system_version CRIADA"
+            )
+
 # =========================================
 # ROOT
 # =========================================
@@ -182,7 +247,7 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "main:app",
+        app,
         host="127.0.0.1",
         port=8000,
         reload=False

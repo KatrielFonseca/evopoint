@@ -316,22 +316,12 @@ class EvoCommands(EvoClient):
             }
     
 
-    def test_command(self, cmd):
-
-        response = self.send({
-
-            "cmd": cmd
-
-        })
-
-        print("=================================")
-        print("TEST COMMAND:", cmd)
-        print("=================================")
-        print(response)
-
-        return response
-
     
+
+    # =====================================
+    # HISTÓRICO DE LOGS
+    # =====================================
+
     def get_logs(self, from_index=0):
 
         response = self.send({
@@ -342,14 +332,11 @@ class EvoCommands(EvoClient):
 
         })
 
+        print("================================")
+        print("GETLOG ENVIADO COM FROM:")
+        print(from_index)
+        print("RESPOSTA:")
+        print(response)
+        print("================================")
+
         return response
-
-    def get_logs(self, from_index=0):
-
-        return self.send({
-
-            "cmd": "getlog",
-
-            "from": from_index
-
-        })

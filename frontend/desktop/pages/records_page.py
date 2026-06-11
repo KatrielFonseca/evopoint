@@ -584,7 +584,15 @@ class RecordsPage(QWidget):
             False
         )
 
-        self.table.setMinimumHeight(560)
+        self.table.setMinimumHeight(0)
+
+        self.table.setMaximumHeight(450)
+
+        self.table.setFixedHeight(450)
+
+        self.table.setVerticalScrollBarPolicy(
+            Qt.ScrollBarAsNeeded
+        )
 
         self.table.verticalHeader().setDefaultSectionSize(
             58
@@ -606,7 +614,10 @@ class RecordsPage(QWidget):
 
         table_layout.addWidget(self.table)
 
-        main_layout.addWidget(table_card)
+        main_layout.addWidget(
+            table_card,
+            1
+        )
 
     # =================================================
     # SAFE RELOAD

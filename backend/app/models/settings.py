@@ -1,6 +1,7 @@
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import Integer
 
 from app.database.database import Base
 
@@ -118,4 +119,9 @@ class Settings(Base):
     system_version = Column(
         Integer,
         default=1
+    )
+
+    last_log_index = Column(
+        Integer,
+        default=0
     )
