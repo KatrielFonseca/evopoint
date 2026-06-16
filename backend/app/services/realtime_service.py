@@ -66,111 +66,111 @@ def sync_historical_logs():
                 f"IMPORTANDO {len(records)} LOGS"
             )
 
-            for log in records:
+        for log in records:
 
-                try:
+            try:
 
-                    enrollid = str(
+                enrollid = str(
+                    log.get(
+                        "enrollid",
+                        ""
+                    )
+                ).strip()
+
+                if (
+                    not enrollid
+                    or
+                    enrollid == "99999999"
+                ):
+                    continue
+
+                log_time_raw = str(
+                    log.get(
+                        "time",
+                        ""
+                    )
+                ).strip()
+
+                if not log_time_raw:
+                    continue
+
+                log_time = datetime.strptime(
+                    log_time_raw,
+                    "%Y-%m-%d %H:%M:%S"
+                )
+
+                deleted = db.query(
+                    DeletedLog
+                ).filter(
+
+                    DeletedLog.employee_registration
+                    == enrollid,
+
+                    DeletedLog.record_time
+                    == log_time
+
+                ).first()
+
+                if deleted:
+                    continue
+
+                existing = db.query(
+                    TimeRecord
+                ).filter(
+
+                    TimeRecord.employee_registration
+                    == enrollid,
+
+                    TimeRecord.record_time
+                    == log_time
+
+                ).first()
+
+                if existing:
+                    continue
+
+                novo = TimeRecord(
+
+                    employee_registration=
+                    enrollid,
+
+                    employee_name=
+                    log.get(
+                        "name",
+                        ""
+                    ),
+
+                    record_time=
+                    log_time,
+
+                    verification_mode=
+                    "Facial",
+
+                    device_event=
+                    str(
                         log.get(
-                            "enrollid",
+                            "event",
                             ""
                         )
-                    ).strip()
+                    ),
 
-                    if (
-                        not enrollid
-                        or
-                        enrollid == "99999999"
-                    ):
-                        continue
+                    inout=0
 
-                    log_time_raw = str(
-                        log.get(
-                            "time",
-                            ""
-                        )
-                    ).strip()
+                )
 
-                    if not log_time_raw:
-                        continue
+                db.add(novo)
 
-                    log_time = datetime.strptime(
-                        log_time_raw,
-                        "%Y-%m-%d %H:%M:%S"
-                    )
+            except Exception as e:
 
-                    deleted = db.query(
-                        DeletedLog
-                    ).filter(
+                print(
+                    "ERRO:",
+                    e
+                )
 
-                        DeletedLog.employee_registration
-                        == enrollid,
+        db.commit()
 
-                        DeletedLog.record_time
-                        == log_time
-
-                    ).first()
-
-                    if deleted:
-                        continue
-
-                    existing = db.query(
-                        TimeRecord
-                    ).filter(
-
-                        TimeRecord.employee_registration
-                        == enrollid,
-
-                        TimeRecord.record_time
-                        == log_time
-
-                    ).first()
-
-                    if existing:
-                        continue
-
-                    novo = TimeRecord(
-
-                        employee_registration=
-                        enrollid,
-
-                        employee_name=
-                        log.get(
-                            "name",
-                            ""
-                        ),
-
-                        record_time=
-                        log_time,
-
-                        verification_mode=
-                        "Facial",
-
-                        device_event=
-                        str(
-                            log.get(
-                                "event",
-                                ""
-                            )
-                        ),
-
-                        inout=0
-
-                    )
-
-                    db.add(novo)
-
-                except Exception as e:
-
-                    print(
-                        "ERRO:",
-                        e
-                    )
-
-            db.commit()
-
-            print("INDEX SALVO:")
-            print(from_index)
+        print("INDEX SALVO:")
+        print(from_index)
 
         print(
             "HISTÓRICO IMPORTADO"

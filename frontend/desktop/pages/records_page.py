@@ -10,6 +10,12 @@ from PySide6.QtGui import (
     QFont
 )
 
+import webbrowser
+import tempfile
+import os
+
+from urllib.parse import quote
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -176,6 +182,43 @@ class RecordsPage(QWidget):
         header_layout.addStretch()
 
         header_layout.addWidget(refresh_button)
+
+        self.whatsapp_button = QPushButton(
+            "Enviar WhatsApp"
+        )
+
+        self.whatsapp_button.setMinimumHeight(48)
+
+        self.whatsapp_button.setStyleSheet("""
+
+            QPushButton {
+
+                background: #25D366;
+                color: white;
+
+                border: none;
+                border-radius: 14px;
+
+                padding: 14px 22px;
+
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            QPushButton:hover {
+
+                background: #20BD5A;
+            }
+
+        """)
+
+        self.whatsapp_button.clicked.connect(
+            self.send_whatsapp
+        )
+
+        header_layout.addWidget(
+            self.whatsapp_button
+        )
 
         add_punch_button = QPushButton(
             "Adicionar Batida"
@@ -1281,6 +1324,206 @@ class RecordsPage(QWidget):
                 str(e)
             )
 
+
+    def send_whatsapp(self):
+
+        try:
+
+            registration = (
+                self.employee_combo.currentData()
+            )
+
+            if not registration:
+
+                QMessageBox.warning(
+
+                    self,
+
+                    "WhatsApp",
+
+                    "Selecione um funcionário."
+
+                )
+
+                return
+
+            # ==========================
+            # BUSCA FUNCIONÁRIO
+            # ==========================
+
+            response = requests.get(
+
+                f"{API_URL}/employees"
+
+            )
+
+            employees = response.json()
+
+            employee = None
+
+            for emp in employees:
+
+                if emp["registration"] == registration:
+
+                    employee = emp
+
+                    break
+
+            if not employee:
+
+                QMessageBox.warning(
+
+                    self,
+
+                    "WhatsApp",
+
+                    "Funcionário não encontrado."
+
+                )
+
+                return
+
+            whatsapp = employee.get(
+                "whatsapp"
+            )
+
+            if not whatsapp:
+
+                QMessageBox.warning(
+
+                    self,
+
+                    "WhatsApp",
+
+                    "Funcionário sem WhatsApp cadastrado."
+
+                )
+
+                return
+
+            # ==========================
+            # GERA PDF
+            # ==========================
+
+            start_date = self.start_date.date().toString(
+                "yyyy-MM-dd"
+            )
+
+            end_date = self.end_date.date().toString(
+                "yyyy-MM-dd"
+            )
+
+            pdf_response = requests.get(
+
+                f"{API_URL}/timesheet/pdf/{registration}",
+
+                params={
+
+                    "start_date": start_date,
+
+                    "end_date": end_date
+
+                }
+
+            )
+
+            if pdf_response.status_code != 200:
+
+                QMessageBox.warning(
+
+                    self,
+
+                    "Erro",
+
+                    pdf_response.text
+
+                )
+
+                return
+
+            pasta = os.path.join(
+
+                tempfile.gettempdir(),
+
+                "AVAPoint_PDFs"
+
+            )
+
+            os.makedirs(
+
+                pasta,
+
+                exist_ok=True
+
+            )
+
+            nome_arquivo = f"{registration}.pdf"
+
+            pdf_path = os.path.join(
+
+                pasta,
+
+                nome_arquivo
+
+            )
+
+            with open(pdf_path, "wb") as f:
+
+                f.write(
+                    pdf_response.content
+                )
+
+            # ==========================
+            # ABRE PASTA
+            # ==========================
+
+            os.startfile(pasta)
+
+            # ==========================
+            # ABRE WHATSAPP
+            # ==========================
+
+            mensagem = quote(
+
+                "Olá, segue sua folha de ponto."
+
+            )
+
+            numero = "".join(
+
+                c for c in whatsapp
+
+                if c.isdigit()
+            )
+
+            webbrowser.open(
+
+                f"https://wa.me/55{numero}?text={mensagem}"
+
+            )
+
+            QMessageBox.information(
+
+                self,
+
+                "WhatsApp",
+
+                f"PDF gerado em:\n\n{pdf_path}\n\nArraste o arquivo para o WhatsApp."
+
+            )
+
+        except Exception as e:
+
+            QMessageBox.critical(
+
+                self,
+
+                "Erro",
+
+                str(e)
+
+            )
+    
     # =================================================
     # PDF TODOS
     # =================================================
