@@ -38,6 +38,10 @@ from app.models.justification import Justification
 from zipfile import ZipFile
 import tempfile
 import os
+from app.models.settings import Settings
+
+
+
 
 from PySide6.QtWidgets import QFileDialog
 from datetime import timedelta
@@ -256,6 +260,15 @@ def generate_pdf(
             registration
 
         ).first()
+        
+        settings = db.query(Settings).first()
+
+        cnpj = ""
+
+        if settings:
+
+            cnpj = settings.cnpj or ""
+
 
         if not employee:
 
@@ -509,7 +522,7 @@ def generate_pdf(
 
             Paragraph(
 
-                "EVOPoint",
+                "AVAPoint",
 
                 title_style
 
@@ -602,11 +615,17 @@ def generate_pdf(
 
             seg = ter = qua = qui = sex = sab = dom = "-"
 
+        admissao = ""
+
+        if employee.admission_date:
+
+            admissao = employee.admission_date.strftime("%d/%m/%Y")
+
         info_data = [
 
             ["Empresa", employee.company, "Horário"],
 
-            ["CNPJ", "01.919.625/0001-14", f"SEG {seg}"],
+            ["CNPJ", cnpj, f"SEG {seg}"],
 
             ["Matrícula", employee.registration, f"TER {ter}"],
 
@@ -618,7 +637,7 @@ def generate_pdf(
 
             ["Departamento", employee.department, f"SAB {sab}"],
 
-            ["", "", f"DOM {dom}"]
+            ["Admissão", admissao, f"DOM {dom}"]
 
         ]
 
@@ -698,6 +717,7 @@ def generate_pdf(
         total_carga = 0
 
         total_saldo = 0
+        saldo_acumulado = 0
 
 
         # =================================================
@@ -1094,8 +1114,9 @@ def generate_pdf(
             total_extras_100 += extras_100
             total_carga += carga_diaria
             total_saldo += saldo
+            saldo_acumulado += saldo
 
-            if saldo >= 0:
+            if saldo_acumulado >= 0:
 
                 saldo_text = (
 
@@ -1104,7 +1125,7 @@ def generate_pdf(
                     +
 
                     seconds_to_hours(
-                        saldo
+                        saldo_acumulado
                     )
 
                 )
@@ -1118,7 +1139,7 @@ def generate_pdf(
                     +
 
                     seconds_to_hours(
-                        abs(saldo)
+                        abs(saldo_acumulado)
                     )
 
                 )

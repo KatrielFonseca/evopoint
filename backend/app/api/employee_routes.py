@@ -67,13 +67,15 @@ def list_employees():
 
                 "id": emp.id,
 
-                "registration": str(
-                    emp.registration
-                ),
+                "registration": str(emp.registration),
 
                 "name": emp.name or "",
 
                 "cpf": emp.cpf or "",
+
+                "pis": emp.pis or "",
+
+                "rg": emp.rg or "",
 
                 "company": emp.company or "",
 
@@ -81,11 +83,14 @@ def list_employees():
 
                 "role": emp.role or "",
 
+                "schedule": emp.schedule or "",
+
                 "whatsapp": emp.whatsapp or "",
 
-                "schedule": emp.schedule or ""
+                "admission_date":
+                    emp.admission_date.strftime("%Y-%m-%d")
+                    if emp.admission_date else ""
 
-                
             })
 
         return result
@@ -201,17 +206,21 @@ def create_employee(employee: EmployeeCreate):
 
             cpf=employee.cpf,
 
+            pis=employee.pis,
+
+            rg=employee.rg,
+
             company=employee.company,
 
             department=employee.department,
 
             role=employee.role,
 
-            whatsapp=employee.whatsapp,
+            schedule=employee.schedule,
 
-            schedule=employee.schedule
+            admission_date=employee.admission_date,
 
-            
+            whatsapp=employee.whatsapp
         )
 
         db.add(new_employee)
@@ -384,6 +393,12 @@ def update_employee(
         employee.role = employee_data.role
 
         employee.schedule = employee_data.schedule
+
+        employee.pis = employee_data.pis
+
+        employee.rg = employee_data.rg
+
+        employee.admission_date = employee_data.admission_date
 
         bump_system_version(db)
 

@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel
 
 
@@ -7,6 +9,10 @@ class EmployeeCreate(BaseModel):
 
     cpf: str
 
+    pis: str | None = None
+
+    rg: str | None = None
+
     company: str
 
     department: str
@@ -14,5 +20,7 @@ class EmployeeCreate(BaseModel):
     role: str
 
     schedule: str
+
+    admission_date: date | None = None
 
     whatsapp: str | None = None

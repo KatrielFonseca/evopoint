@@ -925,6 +925,8 @@ class RecordsPage(QWidget):
                     horas_item
                 )
 
+                
+
                 delete_button = QPushButton("🗑")
 
                 delete_button.setCursor(
