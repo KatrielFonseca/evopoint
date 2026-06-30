@@ -2,6 +2,8 @@ import requests
 
 from PySide6.QtCore import Qt
 
+from datetime import datetime
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -19,6 +21,7 @@ from PySide6.QtWidgets import (
     QAbstractItemView
 )
 
+
 JUSTIFICATIONS_URL = "http://127.0.0.1:8000/justifications/"
 EMPLOYEES_URL = "http://127.0.0.1:8000/employees"
 
@@ -34,6 +37,10 @@ class JustificationsPage(QWidget):
         self.load_employees()
 
         self.load_justifications()
+
+        self.current_month = datetime.now().month
+
+        self.current_year = datetime.now().year
 
     # =========================================
     # UI
@@ -88,6 +95,152 @@ class JustificationsPage(QWidget):
         """)
 
         main_layout.addWidget(title)
+
+        # =========================================
+        # FILTROS
+        # =========================================
+
+        filter_card = QFrame()
+
+        filter_card.setStyleSheet("""
+
+        QFrame{
+
+            background:white;
+
+            border-radius:24px;
+
+        }
+
+        """)
+
+        filter_layout = QHBoxLayout()
+
+        filter_layout.setContentsMargins(
+            20,
+            20,
+            20,
+            20
+        )
+
+        filter_layout.setSpacing(15)
+
+        filter_card.setLayout(filter_layout)
+
+        # Funcionário
+
+        self.filter_employee = QComboBox()
+
+        self.filter_employee.setMinimumHeight(45)
+
+        self.filter_employee.setStyleSheet(
+            self.combo_style()
+        )
+
+        self.filter_employee.addItem(
+            "Todos",
+            None
+        )
+
+        # Mês
+
+        self.filter_month = QComboBox()
+
+        self.filter_month.setMinimumHeight(45)
+
+        self.filter_month.setStyleSheet(
+            self.combo_style()
+        )
+
+        meses = [
+
+            "Janeiro",
+            "Fevereiro",
+            "Março",
+            "Abril",
+            "Maio",
+            "Junho",
+            "Julho",
+            "Agosto",
+            "Setembro",
+            "Outubro",
+            "Novembro",
+            "Dezembro"
+
+        ]
+
+        for i, nome in enumerate(meses, start=1):
+
+            self.filter_month.addItem(
+                nome,
+                i
+            )
+
+        # Ano
+
+        self.filter_year = QComboBox()
+
+        self.filter_year.setMinimumHeight(45)
+
+        self.filter_year.setStyleSheet(
+            self.combo_style()
+        )
+
+        for ano in range(2024, 2036):
+
+            self.filter_year.addItem(
+                str(ano)
+            )
+
+        hoje = datetime.now()
+
+        self.filter_month.setCurrentIndex(
+            hoje.month - 1
+        )
+
+        self.filter_year.setCurrentText(
+            str(hoje.year)
+        )
+
+        # Botão
+
+        self.search_button = QPushButton(
+            "Pesquisar"
+        )
+
+        self.search_button.setMinimumHeight(45)
+
+        self.search_button.setStyleSheet(
+            self.green_button()
+        )
+
+        self.search_button.clicked.connect(
+            self.search_month
+        )
+
+        filter_layout.addWidget(
+            self.filter_employee,
+            3
+        )
+
+        filter_layout.addWidget(
+            self.filter_month,
+            1
+        )
+
+        filter_layout.addWidget(
+            self.filter_year,
+            1
+        )
+
+        filter_layout.addWidget(
+            self.search_button,
+            1
+        )
+
+        main_layout.addWidget(
+            filter_card
+        )
 
         # =========================================
         # FORM CARD
@@ -292,10 +445,6 @@ class JustificationsPage(QWidget):
         )
 
 
-        main_layout.addWidget(
-            form_card
-        )
-
         # =========================================
         # TABLE CARD
         # =========================================
@@ -373,6 +522,9 @@ class JustificationsPage(QWidget):
             table_card
         )
         
+
+    
+
         self.toggle_hour_fields()
 
 
@@ -481,6 +633,23 @@ class JustificationsPage(QWidget):
             for emp in employees:
 
                 self.employee_input.addItem(
+
+                    emp["name"],
+
+                    emp["id"]
+
+                )
+
+            self.filter_employee.clear()
+
+            self.filter_employee.addItem(
+                "Todos",
+                None
+            )
+
+            for emp in employees:
+
+                self.filter_employee.addItem(
 
                     emp["name"],
 
@@ -617,7 +786,7 @@ class JustificationsPage(QWidget):
                     row,
                     1,
                     QTableWidgetItem(
-                        str(item["employee_id"])
+                        str(item["employee_name"])
                     )
                 )
 
@@ -705,6 +874,72 @@ class JustificationsPage(QWidget):
 
         self.load_justifications()
     
+
+    def search_month(self):
+
+        month = self.filter_month.currentData()
+
+        year = int(
+            self.filter_year.currentText()
+        )
+
+        employee_id = self.filter_employee.currentData()
+
+        url = f"http://127.0.0.1:8000/justifications/month/{year}/{month}"
+
+        if employee_id:
+
+            url += f"?employee_id={employee_id}"
+
+        try:
+
+            response = requests.get(url)
+
+            records = response.json()
+
+            self.table.setRowCount(len(records))
+
+            for row, item in enumerate(records):
+
+                self.table.setItem(
+                    row, 0,
+                    QTableWidgetItem(str(item["id"]))
+                )
+
+                self.table.setItem(
+                    row, 1,
+                    QTableWidgetItem(item["employee_name"])
+                )
+
+                self.table.setItem(
+                    row, 2,
+                    QTableWidgetItem(item["type"])
+                )
+
+                self.table.setItem(
+                    row, 3,
+                    QTableWidgetItem(item["start_date"])
+                )
+
+                self.table.setItem(
+                    row, 4,
+                    QTableWidgetItem(item["end_date"])
+                )
+
+                self.table.setItem(
+                    row, 5,
+                    QTableWidgetItem(item["description"] or "")
+                )
+
+        except Exception as e:
+
+            QMessageBox.critical(
+                self,
+                "Erro",
+                str(e)
+            )
+
+    
     def toggle_hour_fields(self):
 
         show = (
@@ -719,3 +954,5 @@ class JustificationsPage(QWidget):
         self.end_time_input.setVisible(
             show
         )
+
+    

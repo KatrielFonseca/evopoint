@@ -14,6 +14,11 @@ from app.utils.system_version import (
     bump_system_version
 )
 
+from fastapi import Query
+
+
+from app.models.employee import Employee
+
 router = APIRouter(
     prefix="/justifications",
     tags=["Justifications"]
@@ -30,9 +35,21 @@ def get_justifications():
 
     try:
 
-        records = db.query(
-            Justification
-        ).all()
+        records = (
+
+            db.query(
+                Justification,
+                Employee.name
+            )
+
+            .join(
+                Employee,
+                Employee.id == Justification.employee_id
+            )
+
+            .all()
+
+        )
 
         return [
 
@@ -40,38 +57,31 @@ def get_justifications():
 
                 "id": item.id,
 
-                "employee_id":
-                item.employee_id,
+                "employee_id": item.employee_id,
 
-                "start_date":
-                str(item.start_date),
+                "employee_name": employee_name,
 
-                "end_date":
-                str(item.end_date),
+                "start_date": str(item.start_date),
 
-                "mode":
-                item.mode,
+                "end_date": str(item.end_date),
 
-                "start_time":
-                str(item.start_time)
+                "mode": item.mode,
+
+                "start_time": str(item.start_time)
                 if item.start_time else "",
 
-                "end_time":
-                str(item.end_time)
+                "end_time": str(item.end_time)
                 if item.end_time else "",
 
-                "justification_type":
-                item.justification_type,
+                "justification_type": item.justification_type,
 
-                "description":
-                item.description,
+                "description": item.description,
 
-                "attachment":
-                item.attachment
+                "attachment": item.attachment
 
             }
 
-            for item in records
+            for item, employee_name in records
 
         ]
 
@@ -178,6 +188,113 @@ def delete_justification(
             "success": True
 
         }
+
+    finally:
+
+        db.close()
+
+
+from datetime import date
+from calendar import monthrange
+
+
+# =========================================
+# JUSTIFICATIVAS DO MÊS
+# =========================================
+
+@router.get("/month/{year}/{month}")
+def get_month_justifications(
+    year: int,
+    month: int,
+    employee_id: int | None = Query(None)
+):
+
+    db = SessionLocal()
+
+    try:
+
+        first_day = date(
+            year,
+            month,
+            1
+        )
+
+        last_day = date(
+            year,
+            month,
+            monthrange(year, month)[1]
+        )
+
+        query = (
+
+            db.query(
+                Justification,
+                Employee.name
+            )
+
+            .join(
+                Employee,
+                Employee.id == Justification.employee_id
+            )
+
+            .filter(
+
+                Justification.start_date <= last_day,
+
+                Justification.end_date >= first_day
+
+            )
+
+        )
+
+        # =====================================
+        # FILTRO POR FUNCIONÁRIO
+        # =====================================
+
+        if employee_id is not None:
+
+            query = query.filter(
+
+                Justification.employee_id == employee_id
+
+            )
+
+        records = query.all()
+
+        result = []
+
+        for item, employee_name in records:
+
+            result.append({
+
+                "id": item.id,
+
+                "employee_name": employee_name,
+
+                "employee_id": item.employee_id,
+
+                "type": item.justification_type,
+
+                "mode": item.mode,
+
+                "start_date": str(item.start_date),
+
+                "end_date": str(item.end_date),
+
+                "start_time":
+                    str(item.start_time)
+                    if item.start_time else "",
+
+                "end_time":
+                    str(item.end_time)
+                    if item.end_time else "",
+
+                "description":
+                    item.description
+
+            })
+
+        return result
 
     finally:
 

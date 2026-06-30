@@ -42,6 +42,9 @@ from app.models.settings import Settings
 
 
 
+from app.calculations.worked_time import justified_seconds
+
+
 
 from PySide6.QtWidgets import QFileDialog
 from datetime import timedelta
@@ -888,6 +891,18 @@ def generate_pdf(
 
                         worked_seconds += sec
 
+            # =====================================
+            # HORAS JUSTIFICADAS
+            # =====================================
+
+            worked_seconds += justified_seconds(
+
+                day_scale,
+
+                hour_justification
+
+            )
+
             faltas = 0
 
             extras_50 = 0
@@ -895,12 +910,13 @@ def generate_pdf(
 
             if justification_day:
 
+                worked_seconds = carga_diaria
+
                 faltas = 0
 
                 extras_50 = 0
 
                 extras_100 = 0
-
 
             # ==========================================
             # FERIADO = 100%
@@ -981,7 +997,11 @@ def generate_pdf(
 
             if justification_day:
 
+                worked_seconds = carga_diaria
+
                 normais_dia = carga_diaria
+
+                faltas = 0
 
 
 
@@ -1023,8 +1043,6 @@ def generate_pdf(
 
                         except:
                             pass
-
-
 
             just_text = ""
 

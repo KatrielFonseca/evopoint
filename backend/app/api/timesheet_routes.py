@@ -6,6 +6,11 @@ from datetime import datetime
 from app.database.database import SessionLocal
 from app.models.time_record import TimeRecord
 
+from app.models.employee import Employee
+from app.models.justification import Justification
+from app.models.scale import Scale
+from app.models.scale_day import ScaleDay
+
 router = APIRouter()
 
 
@@ -63,6 +68,58 @@ def get_timesheet(registration: str):
                 day_records[0].employee_name
             )
 
+
+
+            # ==========================================
+            # FUNCIONÁRIO
+            # ==========================================
+
+            employee = db.query(Employee).filter(
+                Employee.registration == registration
+            ).first()
+
+            schedule = None
+
+            if employee and employee.schedule:
+
+                schedule = db.query(Scale).filter(
+                    Scale.name == employee.schedule
+                ).first()
+
+            day_scale = None
+
+            if schedule:
+
+                weekday = datetime.strptime(
+                    date,
+                    "%Y-%m-%d"
+                ).weekday()
+
+                nomes = [
+
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY",
+                    "SATURDAY",
+                    "SUNDAY"
+
+                ]
+
+                day_scale = db.query(
+                    ScaleDay
+                ).filter(
+
+                    ScaleDay.scale_id == schedule.id,
+
+                    ScaleDay.day_name == nomes[weekday]
+
+                ).first()
+
+            
+
+
             # =================================================
             # ORDENA CORRETAMENTE
             # =================================================
@@ -107,6 +164,160 @@ def get_timesheet(registration: str):
 
                 batidas.append(None)
 
+
+
+            # ==========================================
+            # JUSTIFICATIVAS
+            # ==========================================
+
+            justification = None
+
+            if employee:
+
+                current_day = datetime.strptime(
+                    date,
+                    "%Y-%m-%d"
+                ).date()
+
+                justification = db.query(
+                    Justification
+                ).filter(
+
+                    Justification.employee_id == employee.id,
+
+                    Justification.start_date <= current_day,
+
+                    Justification.end_date >= current_day
+
+                ).first()
+
+
+            mapping = {
+
+                "Atestado Médico": "ATEST",
+
+                "Atestado": "ATEST",
+
+                "Férias": "FERIA",
+
+                "Abono": "ABONO",
+
+                "Licença": "LICEN",
+
+                "Folga": "FOLGA"
+
+            }
+
+            hour_slots = [
+
+                False,
+
+                False,
+
+                False,
+
+                False,
+
+                False,
+
+                False
+
+            ]
+
+            just_text = ""
+
+            if justification:
+
+                just_text = mapping.get(
+
+                    justification.justification_type,
+
+                    justification.justification_type.upper()[:5]
+
+                )
+
+                # --------------------------------------
+                # DIA INTEIRO
+                # --------------------------------------
+
+                if justification.mode == "day":
+
+                    for i in range(6):
+
+                        batidas[i] = {
+
+                            "id": None,
+
+                            "time": just_text,
+
+                            "datetime": None,
+
+                            "inout": None
+
+                        }
+
+                # --------------------------------------
+                # POR HORA
+                # --------------------------------------
+
+                elif justification.mode == "hour" and day_scale:
+
+                    horarios = [
+
+                        day_scale.entry_1,
+
+                        day_scale.exit_1,
+
+                        day_scale.entry_2,
+
+                        day_scale.exit_2,
+
+                        day_scale.entry_3,
+
+                        day_scale.exit_3
+
+                    ]
+
+                    for idx, horario in enumerate(horarios):
+
+                        if not horario:
+
+                            continue
+
+                        hora = datetime.strptime(
+
+                            horario[:5],
+
+                            "%H:%M"
+
+                        ).time()
+
+                        if (
+
+                            justification.start_time
+
+                            <= hora
+
+                            <=
+
+                            justification.end_time
+
+                        ):
+
+                            batidas[idx] = {
+
+                                "id": None,
+
+                                "time": just_text,
+
+                                "datetime": None,
+
+                                "inout": None
+
+                            }
+
+
+
             # =================================================
             # MAPEAMENTO FIXO
             # =================================================
@@ -137,13 +348,24 @@ def get_timesheet(registration: str):
 
             for entrada, saida in pares:
 
-                if entrada and saida:
+                if (
+
+                    entrada
+                    and
+                    saida
+                    and
+                    entrada.get("datetime")
+                    and
+                    saida.get("datetime")
+
+                ):
 
                     diferenca = (
 
                         saida["datetime"]
                         -
                         entrada["datetime"]
+
                     )
 
                     segundos = int(
@@ -219,7 +441,16 @@ def get_timesheet(registration: str):
             reverse=True
         )
 
+
+        import json
+
+        print("================================")
+        print(json.dumps(result, default=str, indent=4))
+        print("================================")
+
         return result
+
+       
 
     except Exception as e:
 
