@@ -750,8 +750,21 @@ class RecordsPage(QWidget):
                 return
 
             response = requests.get(
-                f"{API_URL}/timesheet/{registration}"
+
+                f"{API_URL}/timesheet/{registration}",
+
+                params={
+
+                    "start_date": self.start_date.date().toString("yyyy-MM-dd"),
+
+                    "end_date": self.end_date.date().toString("yyyy-MM-dd")
+
+                }
+
             )
+
+            print(response.status_code)
+            print(response.text)
 
             records = response.json()
 
@@ -1237,17 +1250,17 @@ class RecordsPage(QWidget):
 
             response = requests.get(
 
-                f"{API_URL}/timesheet/pdf/{registration}",
+            f"{API_URL}/timesheet/pdf/{registration}",
 
-                params={
+            params={
 
-                    "start_date": start_date,
+                "start_date": self.start_date.date().toString("yyyy-MM-dd"),
 
-                    "end_date": end_date
+                "end_date": self.end_date.date().toString("yyyy-MM-dd")
 
-                }
+            }
 
-            )
+        )
 
             if response.status_code != 200:
 
@@ -1311,11 +1324,19 @@ class RecordsPage(QWidget):
 
             response = requests.get(
 
-                f"{API_URL}/employees"
+                f"{API_URL}/timesheet/{registration}",
+
+                params={
+
+                    "start_date": self.start_date.date().toString("yyyy-MM-dd"),
+
+                    "end_date": self.end_date.date().toString("yyyy-MM-dd")
+
+                }
 
             )
 
-            employees = response.json()
+            records = response.json()
 
             employee = None
 
