@@ -1322,31 +1322,11 @@ class RecordsPage(QWidget):
             # BUSCA FUNCIONÁRIO
             # ==========================
 
-            response = requests.get(
+           
 
-                f"{API_URL}/timesheet/{registration}",
-
-                params={
-
-                    "start_date": self.start_date.date().toString("yyyy-MM-dd"),
-
-                    "end_date": self.end_date.date().toString("yyyy-MM-dd")
-
-                }
-
-            )
-
-            records = response.json()
-
-            employee = None
-
-            for emp in employees:
-
-                if emp["registration"] == registration:
-
-                    employee = emp
-
-                    break
+            employee = requests.get(
+                f"{API_URL}/employees/{registration}"
+            ).json()
 
             if not employee:
 

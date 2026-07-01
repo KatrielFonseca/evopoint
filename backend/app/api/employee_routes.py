@@ -105,6 +105,63 @@ def list_employees():
 
         db.close()
 
+
+# =====================================================
+# BUSCAR FUNCIONÁRIO PELA MATRÍCULA
+# =====================================================
+
+@router.get("/employees/{registration}")
+def get_employee(registration: str):
+
+    db: Session = SessionLocal()
+
+    try:
+
+        employee = db.query(Employee).filter(
+            Employee.registration == registration
+        ).first()
+
+        if not employee:
+
+            return {
+                "success": False,
+                "message": "Funcionário não encontrado"
+            }
+
+        return {
+
+            "id": employee.id,
+
+            "registration": str(employee.registration),
+
+            "name": employee.name or "",
+
+            "cpf": employee.cpf or "",
+
+            "pis": employee.pis or "",
+
+            "rg": employee.rg or "",
+
+            "company": employee.company or "",
+
+            "department": employee.department or "",
+
+            "role": employee.role or "",
+
+            "schedule": employee.schedule or "",
+
+            "whatsapp": employee.whatsapp or "",
+
+            "admission_date":
+                employee.admission_date.strftime("%Y-%m-%d")
+                if employee.admission_date else ""
+
+        }
+
+    finally:
+
+        db.close()
+
 # =====================================================
 # GERAR MATRÍCULA ÚNICA
 # =====================================================
