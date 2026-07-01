@@ -931,6 +931,40 @@ class JustificationsPage(QWidget):
                     QTableWidgetItem(item["description"] or "")
                 )
 
+                delete_button = QPushButton(
+                    "🗑"
+                )
+
+                delete_button.clicked.connect(
+
+                    lambda checked=False,
+                    item_id=item["id"]:
+                    self.delete_justification(
+                        item_id
+                    )
+
+                )
+
+                delete_button.setStyleSheet("""
+
+                    QPushButton {
+
+                        background: #FEE2E2;
+
+                        border: none;
+
+                        border-radius: 10px;
+
+                    }
+
+                """)
+
+                self.table.setCellWidget(
+                    row,
+                    6,
+                    delete_button
+                )
+
         except Exception as e:
 
             QMessageBox.critical(

@@ -29,6 +29,9 @@ import requests
 
 from PySide6.QtGui import QPixmap
 
+import qtawesome as qta
+
+from PySide6.QtCore import QSize
 
 # =========================================
 # SIDEBAR BUTTON
@@ -36,9 +39,13 @@ from PySide6.QtGui import QPixmap
 
 class SidebarButton(QPushButton):
 
-    def __init__(self, text):
+    def __init__(self, text, icon):
 
         super().__init__(text)
+
+        self.setIcon(icon)
+
+        self.setIconSize(QSize(24, 24))
 
         self.setCursor(
             Qt.PointingHandCursor
@@ -193,6 +200,18 @@ class MainWindow(QMainWindow):
 
         logo = QLabel()
 
+        logo.setStyleSheet("""
+
+            QLabel {
+
+                background: transparent;
+
+                border: none;
+
+            }
+
+        """)
+
         pixmap = QPixmap(
             "assets/avapoint.png"
         )
@@ -245,38 +264,48 @@ class MainWindow(QMainWindow):
         # =====================================
 
         self.dashboard_button = SidebarButton(
-            "Dashboard"
+            "Dashboard",
+            qta.icon("fa5s.home", color="white")
         )
 
         self.employees_button = SidebarButton(
-            "Funcionários"
+            "Funcionários",
+            qta.icon("fa5s.users", color="white")
         )
 
         self.records_button = SidebarButton(
-            "Registros"
+            "Registros",
+            qta.icon("fa5s.clock", color="white")
         )
 
         self.scales_button = SidebarButton(
-            "Escalas"
+            "Escalas",
+            qta.icon("fa5s.calendar-alt", color="white")
+        )
+
+        self.justifications_button = SidebarButton(
+            "Justificativas",
+            qta.icon("fa5s.file-medical", color="white")
         )
 
         self.hours_button = SidebarButton(
-            "Banco de Horas"
+            "Banco de Horas",
+            qta.icon("fa5s.stopwatch", color="white")
         )
 
         self.reports_button = SidebarButton(
-            "Relatórios"
+            "Relatórios",
+            qta.icon("fa5s.chart-bar", color="white")
         )
 
         self.devices_button = SidebarButton(
-            "Dispositivos"
+            "Dispositivos",
+            qta.icon("fa5s.desktop", color="white")
         )
 
         self.settings_button = SidebarButton(
-            "Configurações"
-        )
-        self.justifications_button = SidebarButton(
-            "Justificativas"
+            "Configurações",
+            qta.icon("fa5s.cog", color="white")
         )
 
         buttons = [

@@ -500,7 +500,7 @@ class RecordsPage(QWidget):
 
         self.table = QTableWidget()
 
-        self.table.setColumnCount(10)
+        self.table.setColumnCount(9)
 
         self.table.setHorizontalHeaderLabels([
 
@@ -512,8 +512,7 @@ class RecordsPage(QWidget):
             "Saída 2",
             "Entrada 3",
             "Saída 3",
-            "Horas",
-            "Ações"
+            "Horas"
         ])
 
         self.table.setStyleSheet("""
@@ -927,49 +926,6 @@ class RecordsPage(QWidget):
 
                 
 
-                delete_button = QPushButton("🗑")
-
-                delete_button.setCursor(
-                    Qt.PointingHandCursor
-                )
-
-                delete_button.setStyleSheet("""
-
-                    QPushButton {
-
-                        background: #FF5252;
-
-                        color: white;
-
-                        border: none;
-
-                        border-radius: 8px;
-
-                        font-weight: bold;
-
-                        padding: 6px;
-                    }
-
-                    QPushButton:hover {
-
-                        background: #E53935;
-                    }
-
-                """)
-
-                delete_button.clicked.connect(
-
-                    lambda checked=False,
-                    data=record:
-                    self.delete_day(data)
-
-                )
-
-                self.table.setCellWidget(
-                    row,
-                    9,
-                    delete_button
-                )
 
         except Exception as e:
 
