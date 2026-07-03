@@ -15,6 +15,18 @@ from app.devices_evo.commands import EvoCommands
 # =====================================================
 from app.models.deleted_log import DeletedLog
 
+# =========================================
+# STATUS GLOBAL DO REALTIME
+# =========================================
+
+REALTIME_STATUS = {
+
+    "capture": False,
+
+    "evo_online": False
+
+}
+
 
 # =========================================
 # SINCRONIZA HISTÓRICO
@@ -192,6 +204,8 @@ def start_realtime_capture():
     print("REALTIME SERVICE INICIADO")
     print("================================")
 
+    REALTIME_STATUS["capture"] = True
+
 
     sync_historical_logs()
 
@@ -248,6 +262,8 @@ def start_realtime_capture():
 
 
             logs = evo.get_real_time_logs()
+
+            REALTIME_STATUS["evo_online"] = True
 
             records = logs.get("record", [])
 
@@ -468,6 +484,8 @@ def start_realtime_capture():
         except Exception as e:
 
             db.rollback()
+
+            REALTIME_STATUS["evo_online"] = False
 
             print("================================")
             print("ERRO REALTIME")

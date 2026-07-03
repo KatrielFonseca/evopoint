@@ -23,6 +23,9 @@ from pages.reports_page import ReportsPage
 from pages.devices_page import DevicesPage
 from pages.settings_page import SettingsPage
 from pages.justifications_page import JustificationsPage
+from pages.dashboard_page import DashboardPage
+
+
 from PySide6.QtCore import QTimer
 
 import requests
@@ -32,6 +35,10 @@ from PySide6.QtGui import QPixmap
 import qtawesome as qta
 
 from PySide6.QtCore import QSize
+
+
+
+
 
 # =========================================
 # SIDEBAR BUTTON
@@ -514,96 +521,7 @@ class MainWindow(QMainWindow):
         # DASHBOARD PAGE
         # =====================================
 
-        dashboard_page = QWidget()
-
-        dashboard_layout = QVBoxLayout()
-
-        dashboard_layout.setContentsMargins(
-            0,
-            20,
-            0,
-            0
-        )
-
-        dashboard_layout.setSpacing(20)
-
-        dashboard_page.setLayout(
-            dashboard_layout
-        )
-
-        welcome_card = QFrame()
-
-        welcome_card.setStyleSheet("""
-
-            QFrame {
-
-                background: white;
-
-                border-radius: 28px;
-            }
-
-        """)
-
-        welcome_layout = QVBoxLayout()
-
-        welcome_layout.setContentsMargins(
-            35,
-            35,
-            35,
-            35
-        )
-
-        welcome_card.setLayout(
-            welcome_layout
-        )
-
-        dashboard_title = QLabel(
-            "Bem-vindo ao AVAPoint"
-        )
-
-        dashboard_title.setStyleSheet("""
-
-            font-size: 32px;
-
-            font-weight: 800;
-
-            color: #1E1E1E;
-
-        """)
-
-        dashboard_info = QLabel("""
-
-Sistema moderno de ponto facial online
-com reconhecimento facial, banco de horas,
-escalas, registros em tempo real e integração EVO.
-
-        """)
-
-        dashboard_info.setStyleSheet("""
-
-            font-size: 18px;
-
-            color: #555555;
-
-            line-height: 30px;
-
-        """)
-
-        welcome_layout.addWidget(
-            dashboard_title
-        )
-
-        welcome_layout.addSpacing(10)
-
-        welcome_layout.addWidget(
-            dashboard_info
-        )
-
-        dashboard_layout.addWidget(
-            welcome_card
-        )
-
-        dashboard_layout.addStretch()
+        self.dashboard_page = DashboardPage()
 
         # =====================================
         # REAL PAGES
@@ -648,7 +566,7 @@ escalas, registros em tempo real e integração EVO.
         # =====================================
 
         self.stack.addWidget(
-            dashboard_page
+            self.dashboard_page
         )
 
         self.stack.addWidget(
@@ -686,6 +604,7 @@ escalas, registros em tempo real e integração EVO.
         self.stack.addWidget(
             self.justifications_page
         )
+        
 
         # =====================================
         # BUTTON EVENTS

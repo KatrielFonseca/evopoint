@@ -62,6 +62,9 @@ from app.api.scale_day_routes import (
     router as scale_day_router
 )
 
+from app.api.dashboard_routes import (
+    router as dashboard_router
+)
 
 # =========================================
 # REALTIME SERVICE
@@ -229,6 +232,10 @@ app.include_router(
 
 app.include_router(
     justification_router
+)
+
+app.include_router(
+    dashboard_router
 )
 # =========================================
 # DEBUG

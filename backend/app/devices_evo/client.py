@@ -31,3 +31,6 @@ class EvoClient:
             return response.json()
         except:
             return response.text
+    
+
+    
