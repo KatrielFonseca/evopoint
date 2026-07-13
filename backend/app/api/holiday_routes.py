@@ -1,21 +1,19 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from app.database.database import SessionLocal
-
 from app.models.holiday import Holiday
+from app.schemas.holiday_schema import HolidayCreate
 
-from app.schemas.holiday_schema import (
-    HolidayCreate
-)
 
 router = APIRouter(
     prefix="/holidays",
     tags=["Holidays"]
 )
 
-# =====================================
-# LISTAR
-# =====================================
+
+# =====================================================
+# LISTAR FERIADOS
+# =====================================================
 
 @router.get("/")
 def get_holidays():
@@ -24,27 +22,25 @@ def get_holidays():
 
     try:
 
-        holidays = db.query(
-            Holiday
-        ).order_by(
-            Holiday.date.asc()
-        ).all()
+        holidays = (
+
+            db.query(Holiday)
+
+            .order_by(Holiday.date.asc())
+
+            .all()
+
+        )
 
         return [
 
             {
-
-                "id": item.id,
-
-                "date":
-                    str(item.date),
-
-                "description":
-                    item.description
-
+                "id": holiday.id,
+                "date": holiday.date.isoformat(),
+                "description": holiday.description
             }
 
-            for item in holidays
+            for holiday in holidays
 
         ]
 
@@ -53,88 +49,125 @@ def get_holidays():
         db.close()
 
 
-# =====================================
-# ADICIONAR
-# =====================================
+# =====================================================
+# ADICIONAR FERIADO
+# =====================================================
 
 @router.post("/")
-def create_holiday(
-    data: HolidayCreate
-):
+def create_holiday(data: HolidayCreate):
 
     db = SessionLocal()
 
     try:
 
+        # Evita duplicidade
+        exists = (
+
+            db.query(Holiday)
+
+            .filter(
+                Holiday.date == data.date
+            )
+
+            .first()
+
+        )
+
+        if exists:
+
+            raise HTTPException(
+
+                status_code=400,
+
+                detail="Já existe um feriado cadastrado para esta data."
+
+            )
+
         holiday = Holiday(
 
             date=data.date,
 
-            description=data.description
+            description=data.description.strip()
 
         )
 
-        db.add(
-            holiday
-        )
-
-        bump_system_version(db)
+        db.add(holiday)
 
         db.commit()
 
+        db.refresh(holiday)
+
         return {
 
-            "success": True
+            "success": True,
+
+            "id": holiday.id,
+
+            "message": "Feriado cadastrado com sucesso."
 
         }
+
+    except Exception:
+
+        db.rollback()
+
+        raise
 
     finally:
 
         db.close()
 
 
-# =====================================
-# EXCLUIR
-# =====================================
+# =====================================================
+# EXCLUIR FERIADO
+# =====================================================
 
 @router.delete("/{holiday_id}")
-def delete_holiday(
-    holiday_id: int
-):
+def delete_holiday(holiday_id: int):
 
     db = SessionLocal()
 
     try:
 
-        holiday = db.query(
-            Holiday
-        ).filter(
+        holiday = (
 
-            Holiday.id == holiday_id
+            db.query(Holiday)
 
-        ).first()
+            .filter(
+                Holiday.id == holiday_id
+            )
 
-        if not holiday:
+            .first()
 
-            return {
-
-                "success": False
-
-            }
-
-        db.delete(
-            holiday
         )
 
-        bump_system_version(db)
+        if holiday is None:
+
+            raise HTTPException(
+
+                status_code=404,
+
+                detail="Feriado não encontrado."
+
+            )
+
+        db.delete(holiday)
 
         db.commit()
 
         return {
 
-            "success": True
+            "success": True,
+
+            "message": "Feriado removido com sucesso."
 
         }
+
+    except Exception:
+
+        db.rollback()
+
+        raise
 
     finally:
 
