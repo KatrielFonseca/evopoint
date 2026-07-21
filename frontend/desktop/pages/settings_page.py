@@ -1,6 +1,6 @@
 import requests
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QDate
 
 from PySide6.QtWidgets import (
     QWidget,
@@ -16,7 +16,8 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QHeaderView,
     QAbstractItemView,
-    QScrollArea
+    QScrollArea,
+    QDateEdit
 )
 
 SETTINGS_URL = "http://127.0.0.1:8000/settings/"
@@ -28,6 +29,18 @@ class SettingsPage(QWidget):
     def __init__(self):
 
         super().__init__()
+
+        # =====================================
+        # CONTROLE DE FERIADOS / PAGINAÇÃO
+        # =====================================
+
+        self.holidays_data = []
+
+        self.holiday_filtered_data = []
+
+        self.holiday_page = 1
+
+        self.holiday_page_size = 5
 
         self.setup_ui()
 
@@ -404,9 +417,43 @@ class SettingsPage(QWidget):
             "🎉 Feriados"
         )
 
-        self.holiday_date = self.create_input(
-            "AAAA-MM-DD"
+        self.holiday_date = QDateEdit()
+
+        self.holiday_date.setCalendarPopup(True)
+
+        self.holiday_date.setDisplayFormat(
+            "yyyy-MM-dd"
         )
+
+        self.holiday_date.setDate(
+            QDate.currentDate()
+        )
+
+        self.holiday_date.setMinimumHeight(50)
+
+        self.holiday_date.setStyleSheet("""
+
+        QDateEdit{
+
+            background:#F7F8FA;
+
+            border:1px solid #E5E7EB;
+
+            border-radius:14px;
+
+            padding-left:14px;
+
+            font-size:13px;
+
+        }
+
+        QDateEdit:focus{
+
+            border:1px solid #00C853;
+
+        }
+
+        """)
 
         self.holiday_description = self.create_input(
             "Descrição do feriado"
@@ -452,6 +499,68 @@ class SettingsPage(QWidget):
             1
         )
 
+        # =====================================
+        # BUSCA DE FERIADOS
+        # =====================================
+
+        self.holiday_search = QDateEdit()
+
+        self.holiday_search.setCalendarPopup(True)
+
+        self.holiday_search.setDisplayFormat(
+            "dd/MM/yyyy"
+        )
+
+        self.holiday_search.setDate(
+            QDate.currentDate()
+        )
+
+        self.holiday_search.setMinimumHeight(45)
+
+        self.holiday_search.setStyleSheet("""
+
+            QDateEdit {
+
+                background: #F7F8FA;
+
+                border: 1px solid #E5E7EB;
+
+                border-radius: 14px;
+
+                padding-left: 14px;
+
+                font-size: 13px;
+
+            }
+
+            QDateEdit:focus {
+
+                border: 1px solid #00C853;
+
+            }
+
+        """)
+
+        self.clear_holiday_search_button = QPushButton(
+            "Limpar Busca"
+        )
+
+        self.clear_holiday_search_button.setStyleSheet(
+            self.green_button()
+        )
+
+        holiday.addWidget(
+            self.holiday_search,
+            3,
+            0
+        )
+
+        holiday.addWidget(
+            self.clear_holiday_search_button,
+            3,
+            1
+        )
+
         self.holiday_table = QTableWidget()
 
         self.holiday_table.setColumnCount(3)
@@ -480,7 +589,7 @@ class SettingsPage(QWidget):
 
         holiday.addWidget(
             self.holiday_table,
-            3,
+            4,
             0,
             1,
             2
@@ -566,6 +675,14 @@ class SettingsPage(QWidget):
             self.delete_holiday
         )
 
+        self.holiday_search.dateChanged.connect(
+            self.filter_holidays
+        )
+
+        self.clear_holiday_search_button.clicked.connect(
+            self.clear_holiday_filter
+        )
+
         self.test_button.clicked.connect(
             self.test_connection
         )
@@ -577,6 +694,33 @@ class SettingsPage(QWidget):
         self.reset_button.clicked.connect(
             self.reset_bank
         )
+
+    def filter_holidays(self):
+
+        data = self.holiday_search.date().toString(
+            "yyyy-MM-dd"
+        )
+
+        self.holiday_filtered_data = [
+
+            holiday
+
+            for holiday in self.holidays_data
+
+            if holiday["date"] == data
+
+        ]
+
+        self.update_holiday_table()
+
+
+    def clear_holiday_filter(self):
+
+        self.holiday_filtered_data = (
+            self.holidays_data.copy()
+        )
+
+        self.update_holiday_table()
 
     # =====================================
     # LOAD SETTINGS
@@ -736,41 +880,51 @@ class SettingsPage(QWidget):
                 HOLIDAYS_URL
             )
 
-            holidays = response.json()
+            self.holidays_data = response.json()
 
-            self.holiday_table.setRowCount(
-                len(holidays)
+            self.holiday_filtered_data = (
+                self.holidays_data.copy()
             )
 
-            for row, holiday in enumerate(holidays):
-
-                self.holiday_table.setItem(
-                    row,
-                    0,
-                    QTableWidgetItem(
-                        str(holiday["id"])
-                    )
-                )
-
-                self.holiday_table.setItem(
-                    row,
-                    1,
-                    QTableWidgetItem(
-                        holiday["date"]
-                    )
-                )
-
-                self.holiday_table.setItem(
-                    row,
-                    2,
-                    QTableWidgetItem(
-                        holiday["description"]
-                    )
-                )
+            self.update_holiday_table()
 
         except Exception as e:
 
             print(e)
+    
+    def update_holiday_table(self):
+
+        self.holiday_table.setRowCount(
+            len(self.holiday_filtered_data)
+        )
+
+        for row, holiday in enumerate(
+            self.holiday_filtered_data
+        ):
+
+            self.holiday_table.setItem(
+                row,
+                0,
+                QTableWidgetItem(
+                    str(holiday["id"])
+                )
+            )
+
+            self.holiday_table.setItem(
+                row,
+                1,
+                QTableWidgetItem(
+                    holiday["date"]
+                )
+            )
+
+            self.holiday_table.setItem(
+                row,
+                2,
+                QTableWidgetItem(
+                    holiday["description"]
+                )
+            )
 
     def add_holiday(self):
 
@@ -783,7 +937,9 @@ class SettingsPage(QWidget):
                 json={
 
                     "date":
-                    self.holiday_date.text(),
+                    self.holiday_date.date().toString(
+                        "yyyy-MM-dd"
+                    ),
 
                     "description":
                     self.holiday_description.text()
@@ -794,7 +950,9 @@ class SettingsPage(QWidget):
 
             self.load_holidays()
 
-            self.holiday_date.clear()
+            self.holiday_date.setDate(
+                QDate.currentDate()
+            )
 
             self.holiday_description.clear()
 

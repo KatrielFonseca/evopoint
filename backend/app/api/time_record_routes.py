@@ -531,17 +531,4 @@ def delete_record(record_id: int):
 
         db.close()
 
-    deleted = DeletedLog(
-
-        employee_registration=
-            record.employee_registration,
-
-        record_time=
-            record.record_time
-    )
-
-    db.add(deleted)
-
-    db.delete(record)
-
-    db.commit()
+    

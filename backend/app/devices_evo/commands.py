@@ -328,9 +328,15 @@ class EvoCommands(EvoClient):
 
             "cmd": "getlog",
 
-            "from": from_index
+            "from": from_index,
+
+            "to": from_index + 50
 
         })
+
+        print(response)
+
+        return response
 
         print("================================")
         print("GETLOG ENVIADO COM FROM:")

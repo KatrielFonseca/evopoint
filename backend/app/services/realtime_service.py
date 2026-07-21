@@ -66,6 +66,8 @@ def sync_historical_logs():
 
         logs = evo.get_logs(from_index)
 
+        print(logs)
+
         records = logs.get("record", [])
 
         if not records:
